@@ -1,359 +1,731 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Twist The Context</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#10101a">
+  <meta name="description" content="A chaotic little party game about taking things out of context.">
+  <title>Internet Sucks — party game</title>
   <style>
-    :root {
-      --bg: #1e1e2f;
-      --card: #27293d;
-      --accent: #e14eca;
-      --highlight: #00f2c3;
-      --text: #ffffff;
-      --dim: #9a9a9a;
-    }
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
-    .container { max-width: 520px; width: 100%; background: var(--card); border-radius: 12px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-    h1, h2 { text-align: center; margin-top: 0; }
-    h1 { color: var(--highlight); }
-    .screen { display: none; }
-    .screen.active { display: block; }
-    input, button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; margin-bottom: 12px; }
-    input { background: #1a1a27; color: #fff; border: 1px solid #444; }
-    input:focus { border-color: var(--highlight); outline: none; }
-    button { background: var(--accent); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    button:hover { opacity: 0.9; }
-    button.alt { background: #3d3f58; }
-    .player-list { list-style: none; padding: 0; }
-    .player-list li { background: #1a1a27; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .quote-box { background: #1a1a27; border-left: 4px solid var(--highlight); padding: 14px; margin-bottom: 14px; border-radius: 0 8px 8px 0; font-style: italic; font-size: 1.1em; }
-    .card-option { background: #1a1a27; border: 2px solid #333; padding: 16px; border-radius: 8px; margin-bottom: 12px; cursor: pointer; }
-    .card-option:hover { border-color: var(--highlight); }
-    .tag { font-size: 0.85em; color: var(--dim); margin-bottom: 4px; }
+    :root{color-scheme:dark;--bg:#10101a;--panel:#191927;--panel2:#222236;--ink:#f7f4ff;--muted:#a5a2bd;--line:#36354e;--pink:#ff5fa2;--lime:#c8ff5a;--cyan:#73e6e6;--danger:#ff7b7b;--radius:22px}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 10% -20%,#35224a 0,transparent 46%),radial-gradient(ellipse at 100% 0,#183643 0,transparent 35%),var(--bg);color:var(--ink);font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,textarea{font:inherit}
+    button{border:0;cursor:pointer;transition:transform .12s ease,filter .12s ease}
+    button:active{transform:scale(.985)}
+    button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+    .shell{width:min(100% - 28px,700px);margin:0 auto;padding:22px 0 36px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.04em}
+    .logo{width:40px;height:40px;display:grid;place-items:center;border-radius:13px;background:var(--lime);color:#151521;font-size:23px;transform:rotate(-7deg);box-shadow:4px 4px 0 #705ca4}
+    .brand small{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-top:2px}
+    .connection{font-size:11px;font-weight:800;display:flex;align-items:center;gap:7px;color:var(--muted);padding:8px 10px;border:1px solid var(--line);border-radius:99px}
+    .dot{width:7px;height:7px;border-radius:50%;background:#e0b35b;box-shadow:0 0 0 3px #e0b35b22}
+    .dot.online{background:var(--lime);box-shadow:0 0 0 3px #c8ff5a22}
+    .dot.offline{background:var(--danger);box-shadow:0 0 0 3px #ff7b7b22}
+    .hero{padding:28px 22px 24px;background:linear-gradient(145deg,#242238,#171725 70%);border:1px solid #39364f;border-radius:28px;box-shadow:0 22px 70px #0004;position:relative;overflow:hidden}
+    .eyebrow{font-size:11px;font-weight:900;letter-spacing:.17em;text-transform:uppercase;color:var(--lime);margin-bottom:12px}
+    h1{font-size:clamp(39px,9vw,66px);letter-spacing:-.075em;line-height:.92;margin:0 0 16px;font-weight:1000;max-width:560px}
+    h1 em{font-style:normal;color:var(--pink)}
+    h2{font-size:clamp(23px,6vw,34px);letter-spacing:-.05em;line-height:1.05;margin:0 0 14px}
+    h3{font-size:17px;letter-spacing:-.02em;margin:0 0 8px}
+    p{line-height:1.55;color:var(--muted);margin:0 0 16px}
+    .lead{font-size:16px;max-width:510px}
+    .sticker{position:absolute;right:20px;top:24px;border:2px solid var(--pink);color:var(--pink);font-size:10px;font-weight:1000;letter-spacing:.08em;padding:8px 10px;border-radius:9px;transform:rotate(9deg)}
+    .card{margin-top:14px;padding:22px;background:#191927eF;border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 12px 30px #0002}
+    .screen{display:none}.screen.active{display:block}
+    .field-label{display:block;color:#d4d1e7;font-size:12px;font-weight:850;letter-spacing:.04em;margin:0 0 7px}
+    input,textarea{width:100%;background:#10101b;color:var(--ink);border:1px solid #41405b;border-radius:13px;padding:14px 15px;margin:0 0 15px;min-height:50px}
+    input::placeholder,textarea::placeholder{color:#77758f}
+    textarea{resize:vertical;min-height:112px;line-height:1.45}
+    .row{display:flex;gap:10px;align-items:center}.row>*{min-width:0}.row .grow{flex:1}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:13px 17px;border-radius:13px;background:var(--lime);color:#181824;font-weight:950;width:100%}
+    .btn.secondary{background:#2b2a40;color:var(--ink);border:1px solid #45435f}
+    .btn.pink{background:var(--pink);color:#211522}
+    .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+    .btn:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.5)}
+    .subtle{font-size:12px;color:var(--muted)}
+    .howto{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+    .howto div{padding:12px 10px;border-radius:14px;border:1px solid var(--line);background:#171725}
+    .howto b{display:block;color:var(--cyan);font-size:12px;margin-bottom:5px}
+    .howto span{font-size:11px;line-height:1.4;color:var(--muted)}
+    .roombar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:17px}
+    .roomcode{font-size:21px;letter-spacing:.18em;font-weight:1000;color:var(--lime);font-variant-numeric:tabular-nums}
+    .pill{display:inline-flex;gap:7px;align-items:center;padding:7px 10px;background:#29283d;border:1px solid #41405a;border-radius:99px;color:#d7d4e9;font-size:11px;font-weight:850}
+    .kicker{font-size:11px;font-weight:950;letter-spacing:.16em;color:var(--pink);text-transform:uppercase;margin-bottom:9px}
+    .status{padding:12px 14px;border-radius:12px;background:#222237;color:var(--muted);font-size:13px;line-height:1.5;margin-top:12px}
+    .status.good{background:#243321;color:#d8ffb1}.status.bad{background:#3a222e;color:#ffd3e3}
+    .playerlist,.scorelist{list-style:none;padding:0;margin:14px 0}
+    .playerlist li,.scorelist li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;background:#11111c;border:1px solid #302f45;border-radius:13px;margin-bottom:8px}
+    .person{display:flex;align-items:center;gap:10px;min-width:0}
+    .avatar{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#313048;color:var(--cyan);font-weight:1000}
+    .person-name{font-weight:850;overflow-wrap:anywhere}.meta{font-size:11px;color:var(--muted)}
+    .tag{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:99px;padding:5px 7px;background:#2c2b41;color:var(--cyan)}
+    .quote{padding:16px 17px;background:#10101b;border:1px solid #39384f;border-left:4px solid var(--cyan);border-radius:0 14px 14px 0;font-size:18px;line-height:1.45;font-weight:800;margin:15px 0;overflow-wrap:anywhere}
+    .vote-card{width:100%;text-align:left;padding:16px;margin:0 0 12px;background:#11111c;border:1px solid #45435d;color:var(--ink);border-radius:16px}
+    .vote-card:hover{border-color:var(--lime);background:#1a1a29}
+    .vote-card .context{font-size:17px;font-weight:900;line-height:1.35;overflow-wrap:anywhere}
+    .vote-card .quote{font-size:14px;font-weight:650;margin:12px 0 0;padding:12px;border-left-width:3px}
+    .vote-card .hint{font-size:10px;color:var(--muted);font-weight:900;letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}
+    .score{color:var(--lime);font-size:15px;font-weight:1000;white-space:nowrap}
+    .rank{color:var(--pink);font-size:13px;font-weight:1000}
+    .divider{height:1px;background:var(--line);margin:16px 0}
+    .hidden{display:none!important}
+    .footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#77758f;font-size:11px;padding:17px 4px 0}
+    .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:10;background:#f6f0ff;color:#1b1825;padding:12px 16px;border-radius:14px;font-size:13px;font-weight:800;box-shadow:0 12px 40px #0007;max-width:calc(100% - 28px);text-align:center}
+    @media(min-width:600px){.shell{padding-top:32px}.hero{padding:34px}.card{padding:26px}.two-col{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:start}.two-col .card{margin-top:0}}
+    @media(max-width:390px){.howto{grid-template-columns:1fr}.howto div{display:flex;gap:10px;align-items:center}.howto b{margin:0;min-width:55px}.hero{padding:22px 18px}.card{padding:18px}.sticker{right:14px;top:18px}.connection{font-size:10px}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
   </style>
 </head>
 <body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><div class="logo" aria-hidden="true">!</div><div>INTERNET SUCKS<small>the context is cooked</small></div></div>
+      <div class="connection" title="Realtime database connection"><span id="connectionDot" class="dot"></span><span id="connectionLabel">Connecting</span></div>
+    </header>
 
-<div class="container">
-  <!-- Lobby Join Screen -->
-  <div id="screen-lobby" class="screen active">
-    <h1>Twist the Context</h1>
-    <input type="text" id="username" placeholder="Your Name" maxlength="14">
-    <input type="text" id="roomCode" placeholder="Room Code (Leave blank to create)" maxlength="5" style="text-transform:uppercase">
-    <button id="btnJoin">Join / Host Game</button>
-  </div>
+    <section id="screen-lobby" class="screen active">
+      <div class="hero">
+        <div class="sticker">FRIENDSHIP TEST</div>
+        <div class="eyebrow">A multiplayer party game</div>
+        <h1>Take it out<br>of <em>context.</em></h1>
+        <p class="lead">Give your friends a perfectly normal answer. Then watch them make it look absolutely unhinged. The internet is a terrible place. Have fun.</p>
+        <div class="howto">
+          <div><b>01 / ANSWER</b><span>Respond to a weirdly specific question.</span></div>
+          <div><b>02 / REFRAME</b><span>Make someone else's answer sound suspicious.</span></div>
+          <div><b>03 / VOTE</b><span>Pick the funniest context. Collect points.</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Get in the room.</h2>
+        <p>Everyone uses their own phone. One person hosts; send the room code to the group chat.</p>
+        <label class="field-label" for="playerName">YOUR NICKNAME</label>
+        <input id="playerName" maxlength="18" autocomplete="nickname" placeholder="e.g. keyboard warrior">
+        <label class="field-label" for="joinCode">ROOM CODE <span class="subtle">(leave blank to host)</span></label>
+        <input id="joinCode" maxlength="5" autocapitalize="characters" autocomplete="off" placeholder="5 LETTERS / NUMBERS" style="text-transform:uppercase;letter-spacing:.16em">
+        <button id="enterRoom" class="btn">Create a room <span aria-hidden="true">↗</span></button>
+        <div id="lobbyError" class="status bad hidden" role="alert"></div>
+        <p class="subtle" style="margin-top:14px;margin-bottom:0">Best with 3–8 friends · 5 rounds · no app download</p>
+      </div>
+    </section>
 
-  <!-- Waiting Room -->
-  <div id="screen-waiting" class="screen">
-    <h2>Room: <span id="displayRoomCode" style="color:var(--highlight)"></span></h2>
-    <p style="text-align:center; color: var(--dim);">Share this code with your friends</p>
-    <ul id="waitingPlayers" class="player-list"></ul>
-    <button id="btnStartGame" style="display:none;">Start Game</button>
-  </div>
+    <section id="screen-room" class="screen">
+      <div class="card">
+        <div class="roombar">
+          <div><div class="kicker">Private room</div><div class="roomcode" id="roomCodeDisplay">-----</div></div>
+          <button id="copyRoomCode" class="btn secondary" style="width:auto;min-width:108px">Copy code</button>
+        </div>
+        <h2>Who's online?</h2>
+        <p>Send the code to your friends. The host can start when at least 3 players have joined.</p>
+        <ul id="waitingPlayers" class="playerlist"></ul>
+        <div id="hostNotice" class="status">Waiting for the host…</div>
+        <button id="startGame" class="btn hidden">Start the chaos ↗</button>
+        <button id="backToGame" class="btn secondary hidden" style="margin-top:10px">Return to game</button>
+        <div id="roomError" class="status bad hidden" role="alert"></div>
+      </div>
+    </section>
 
-  <!-- Phase 1: Answering Prompt -->
-  <div id="screen-prompt" class="screen">
-    <p class="tag">ROUND 1: THE OPINION</p>
-    <h2 id="promptQuestion">Loading prompt...</h2>
-    <input type="text" id="promptAnswer" placeholder="Write an honest or funny reply...">
-    <button id="btnSubmitAnswer">Submit Answer</button>
-  </div>
+    <section id="screen-answering" class="screen">
+      <div class="card">
+        <div class="roombar"><span class="pill" id="roundPill">ROUND 1 / 5</span><span class="pill">01 · ANSWER</span></div>
+        <div class="kicker">Say the first thing that comes to mind</div>
+        <h2 id="promptTitle">Loading the prompt…</h2>
+        <p>Keep it short. Your friends will be given the chance to take this wildly out of context.</p>
+        <label class="field-label" for="answerInput">YOUR ANSWER</label>
+        <textarea id="answerInput" maxlength="240" placeholder="Type something your future self may regret…"></textarea>
+        <button id="submitAnswer" class="btn">Lock in answer</button>
+        <div id="answerStatus" class="status hidden" aria-live="polite"></div>
+      </div>
+    </section>
 
-  <!-- Phase 2: Twisting The Context -->
-  <div id="screen-twist" class="screen">
-    <p class="tag">ROUND 2: THE FRAME-UP</p>
-    <p>Another player wrote this answer:</p>
-    <div id="victimQuote" class="quote-box"></div>
-    <input type="text" id="twistTitle" placeholder="Write a forum/headline context that makes them look bad...">
-    <button id="btnSubmitTwist">Publish Post</button>
-  </div>
+    <section id="screen-rewriting" class="screen">
+      <div class="card">
+        <div class="roombar"><span class="pill" id="rewriteRoundPill">ROUND 1 / 5</span><span class="pill">02 · REFRAME</span></div>
+        <div class="kicker">A little context can ruin anything</div>
+        <h2>Make this look suspicious.</h2>
+        <p>Someone in the room said this. Write a fake headline, caption, or context that makes it hilariously worse.</p>
+        <div class="quote" id="answerToReframe"></div>
+        <label class="field-label" for="rewriteInput">THE INTERNET'S VERSION</label>
+        <textarea id="rewriteInput" maxlength="240" placeholder="Breaking: local person admits…"></textarea>
+        <button id="submitRewrite" class="btn pink">Publish your slander</button>
+        <div id="rewriteStatus" class="status hidden" aria-live="polite"></div>
+      </div>
+    </section>
 
-  <!-- Phase 3: Voting Screen -->
-  <div id="screen-voting" class="screen">
-    <p class="tag">ROUND 3: VOTE</p>
-    <h2>Which post is funnier/worse?</h2>
-    <div id="votingCards"></div>
-  </div>
+    <section id="screen-voting" class="screen">
+      <div class="card">
+        <div class="roombar"><span class="pill" id="voteRoundPill">ROUND 1 / 5</span><span class="pill">03 · VOTE</span></div>
+        <div class="kicker">The group chat is the jury</div>
+        <h2>Which reframe wins?</h2>
+        <p>Tap the funniest entry. You can't vote for your own post, and votes stay hidden until everyone has chosen.</p>
+        <div id="votingCards"></div>
+        <div id="voteStatus" class="status hidden" aria-live="polite"></div>
+      </div>
+    </section>
 
-  <!-- Phase 4: Results & Leaderboard -->
-  <div id="screen-results" class="screen">
-    <h2>Scores</h2>
-    <ul id="scoresList" class="player-list"></ul>
-    <button id="btnNextRound" style="display:none;">Next Round</button>
-  </div>
-</div>
+    <section id="screen-results" class="screen">
+      <div class="card">
+        <div class="roombar"><span class="pill" id="resultRoundPill">ROUND 1 / 5</span><span class="pill">THE REVEAL</span></div>
+        <div class="kicker">Receipts were kept</div>
+        <h2>Who cooked?</h2>
+        <p>The votes are in. Here's how the room judged everyone's context crimes.</p>
+        <div id="roundReveal"></div>
+        <div class="divider"></div>
+        <h3>Leaderboard</h3>
+        <ul id="scoreList" class="scorelist"></ul>
+        <button id="nextRound" class="btn">Next round ↗</button>
+      </div>
+    </section>
 
-<!-- Firebase SDK -->
-<script type="module">
-     import { initializeApp } from "firebase/app";
-     import { getAnalytics } from "firebase/analytics";
+    <section id="screen-finished" class="screen">
+      <div class="hero">
+        <div class="eyebrow">That's a wrap</div>
+        <h1>The internet<br><em>survived.</em></h1>
+        <p class="lead">Your friendships may not have. Final standings are below.</p>
+      </div>
+      <div class="card">
+        <div id="winnerPanel"></div>
+        <ul id="finalScoreList" class="scorelist"></ul>
+        <button id="playAgain" class="btn">Run it back ↻</button>
+        <p class="subtle" id="playAgainNote" style="margin-top:12px;margin-bottom:0">Only the host can start a rematch.</p>
+      </div>
+    </section>
 
-  // TODO: Replace with your Firebase credentials from Console
-     const firebaseConfig = {
-  	apiKey: "AIzaSyDVE-tP7ZvQjBGWXwwRHbvXMw-uWsocBG8",
-  	authDomain: "internet-sucks.firebaseapp.com",
-  	databaseURL: "https://internet-sucks-default-rtdb.firebaseio.com",
-  	projectId: "internet-sucks",
-  	storageBucket: "internet-sucks.firebasestorage.app",
-  	messagingSenderId: "876270281291",
-  	appId: "1:876270281291:web:ab8a045b324b9e963da3ce",
-  	measurementId: "G-QDFR9P60PF"
-};
+    <footer class="footer"><span>INTERNET SUCKS · made for the group chat</span><span>Be funny. Be kind-ish.</span></footer>
+  </main>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, get, set, update, onValue, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-  const PROMPTS = [
-    "What is your guilty pleasure snack?",
-    "What do you do right before going to bed?",
-    "What is the first thing you look for in a partner?",
-    "What is your honest opinion about gym culture?",
-    "What is an activity that always makes you cry?",
-    "Describe your favorite weekend hobby in 3 words."
-  ];
+    // This is the web app configuration already associated with this project.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVE-tP7ZvQjBGWXwwRHbvXMw-uWsocBG8",
+      authDomain: "internet-sucks.firebaseapp.com",
+      databaseURL: "https://internet-sucks-default-rtdb.firebaseio.com",
+      projectId: "internet-sucks",
+      storageBucket: "internet-sucks.firebasestorage.app",
+      messagingSenderId: "876270281291",
+      appId: "1:876270281291:web:ab8a045b324b9e963da3ce",
+      measurementId: "G-QDFR9P60PF"
+    };
 
-  let currentRoom = null;
-  let playerId = "p_" + Math.random().toString(36).substring(2, 8);
-  let playerName = "";
-  let isHost = false;
+    const PROMPTS = [
+      "What's a perfectly normal thing that sounds suspicious when you explain it badly?",
+      "What's the worst thing to say during a job interview?",
+      "What's something you pretend to understand but absolutely don't?",
+      "What's an innocent thing you'd hide from a detective?",
+      "What's the most dramatic reason to leave a group chat?",
+      "What's a terrible slogan for a luxury hotel?",
+      "What's the worst possible name for a self-help book?",
+      "What would your pet expose about you in a tell-all interview?",
+      "What's the weirdest thing to say right after meeting someone's parents?",
+      "What's an extremely low-stakes hill you're willing to die on?",
+      "What would be a suspicious search history for a five-year-old?",
+      "What's the most alarming thing to hear from your dentist?",
+      "What's a bad excuse for being 40 minutes late?",
+      "What should absolutely not be printed on a T-shirt?",
+      "What's the worst thing a restaurant could write on the receipt?",
+      "What's your most useless hidden talent?",
+      "What is the worst opening line for a motivational speech?",
+      "What would make a terrible name for a dating app?",
+      "What's something you should never put in a work email?",
+      "What's the least reassuring thing a pilot could announce?",
+      "What's a strange thing to cheer for at a sports event?",
+      "What would you name a very suspicious startup?",
+      "What's the worst possible thing to hear from a babysitter?",
+      "What's a sentence that would ruin a perfectly good birthday party?",
+      "What would be the funniest thing to find in a museum gift shop?"
+    ];
+    const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const MAX_PLAYERS = 12;
+    const TOTAL_ROUNDS = 5;
 
-  const showScreen = (id) => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-  };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    let uid = null;
+    let currentCode = null;
+    let currentRoomRef = null;
+    let roomListener = null;
+    let currentRoom = null;
+    let lastPhase = "";
+    let lastVoteSignature = "";
+    let busy = false;
+    let toastTimer = null;
 
-  // Join or Host Room
-  document.getElementById('btnJoin').addEventListener('click', async () => {
-    playerName = document.getElementById('username').value.trim();
-    let code = document.getElementById('roomCode').value.trim().toUpperCase();
-
-    if (!playerName) return alert("Please enter your name.");
-
-    if (!code) {
-      code = Math.random().toString(36).substring(2, 6).toUpperCase();
-      isHost = true;
+    const $ = (id) => document.getElementById(id);
+    const show = (id) => $(id).classList.remove("hidden");
+    const hide = (id) => $(id).classList.add("hidden");
+    const setConnection = (state, label) => {
+      $("connectionDot").className = "dot " + state;
+      $("connectionLabel").textContent = label;
+    };
+    function say(message) {
+      $("toast").textContent = message;
+      show("toast");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => hide("toast"), 2600);
     }
-
-    currentRoom = code;
-    const roomRef = ref(db, `rooms/${currentRoom}`);
-    const snap = await get(roomRef);
-
-    if (!snap.exists()) {
-      if (!isHost) isHost = true;
-      await set(roomRef, {
-        host: playerId,
-        state: "WAITING",
-        players: { [playerId]: { name: playerName, score: 0 } }
-      });
-    } else {
-      const roomData = snap.val();
-      if (roomData.host === playerId) isHost = true;
-      await update(ref(db, `rooms/${currentRoom}/players/${playerId}`), {
-        name: playerName,
-        score: 0
-      });
+    function showError(id, message) {
+      $(id).textContent = message;
+      show(id);
     }
-
-    document.getElementById('displayRoomCode').innerText = currentRoom;
-    showScreen('screen-waiting');
-    listenToRoom();
-  });
-
-  // State Listener
-  function listenToRoom() {
-    onValue(ref(db, `rooms/${currentRoom}`), (snapshot) => {
-      const room = snapshot.val();
-      if (!room) return;
-
+    function clearError(id) { hide(id); $(id).textContent = ""; }
+    function showScreen(name) {
+      document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
+      $("screen-" + name).classList.add("active");
+    }
+    function newCode() {
+      let out = "";
+      for (let i = 0; i < 5; i++) out += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+      return out;
+    }
+    function safeText(el, value) { el.textContent = value == null ? "" : String(value); }
+    function playerNameFor(room, id) {
+      return (room.players && room.players[id] && room.players[id].name) || "Anonymous legend";
+    }
+    function phaseName(phase) {
+      return ({lobby:"Lobby", answering:"Answering", rewriting:"Reframing", voting:"Voting", results:"Results", finished:"Finished"})[phase] || "In game";
+    }
+    function participantIds(room) {
+      return Array.isArray(room.participants) ? room.participants : Object.keys(room.players || {});
+    }
+    function addPlayerRow(list, name, subtitle, trailing, index) {
+      const li = document.createElement("li");
+      const person = document.createElement("div"); person.className = "person";
+      const avatar = document.createElement("span"); avatar.className = "avatar"; avatar.textContent = (name || "?").slice(0,1).toUpperCase();
+      const info = document.createElement("div");
+      const nm = document.createElement("div"); nm.className = "person-name"; nm.textContent = name;
+      const meta = document.createElement("div"); meta.className = "meta"; meta.textContent = subtitle || "";
+      info.append(nm, meta); person.append(avatar, info); li.append(person);
+      if (trailing) { const end = document.createElement("span"); end.className = "tag"; end.textContent = trailing; li.append(end); }
+      list.append(li);
+    }
+    function makeVoteCard(authorId, room) {
+      const assignments = room.assignments || {};
+      const answers = room.answers || {};
+      const twists = room.twists || {};
+      const assignment = assignments[authorId];
+      const answerText = (answers[assignment] && answers[assignment].text) || "(no answer)";
+      const card = document.createElement("button");
+      card.type = "button"; card.className = "vote-card";
+      const hint = document.createElement("div"); hint.className = "hint"; hint.textContent = "THE REFRAME";
+      const ctx = document.createElement("div"); ctx.className = "context"; ctx.textContent = (twists[authorId] && twists[authorId].text) || "";
+      const quote = document.createElement("div"); quote.className = "quote"; quote.textContent = "“" + answerText + "”";
+      card.append(hint, ctx, quote);
+      card.addEventListener("click", () => castVote(authorId));
+      return card;
+    }
+    function renderLobby(room) {
+      $("roomCodeDisplay").textContent = currentCode || "-----";
       const players = room.players || {};
-      const playerIds = Object.keys(players);
-
-      if (room.host === playerId) {
-        isHost = true;
-        document.getElementById('btnStartGame').style.display = 'block';
-        document.getElementById('btnNextRound').style.display = 'block';
-      }
-
-      // Lobby Updates
-      if (room.state === "WAITING") {
-        const list = document.getElementById('waitingPlayers');
-        list.innerHTML = playerIds.map(id => `<li>${players[id].name} ${id === room.host ? '(Host)' : ''}</li>`).join('');
-      }
-
-      // Phase: Prompts
-      if (room.state === "PROMPTS") {
-        document.getElementById('promptQuestion').innerText = room.promptText;
-        showScreen('screen-prompt');
-      }
-
-      // Phase: Twist Context
-      if (room.state === "TWIST") {
-        const assignment = room.assignments ? room.assignments[playerId] : null;
-        if (assignment && room.answers && room.answers[assignment]) {
-          document.getElementById('victimQuote').innerText = `"${room.answers[assignment]}"`;
-          showScreen('screen-twist');
+      const ids = Object.keys(players);
+      $("waitingPlayers").replaceChildren();
+      ids.sort((a,b) => (players[a].joinedAt || 0) - (players[b].joinedAt || 0));
+      ids.forEach((id, i) => {
+        const isHost = id === room.hostId;
+        addPlayerRow($("waitingPlayers"), players[id].name || "Player", id === uid ? "That's you" : (players[id].online === false ? "Reconnecting…" : "Ready to play"), isHost ? "HOST" : "PLAYER", i);
+      });
+      const isHost = room.hostId === uid;
+      $("hostNotice").textContent = isHost
+        ? (ids.length < 3 ? "You're hosting. Invite at least " + (3 - ids.length) + " more friend(s) to start." : "You're hosting. Everyone's here — start whenever.")
+        : "The host will start the game once at least 3 players have joined.";
+      $("startGame").classList.toggle("hidden", !isHost);
+      $("startGame").disabled = ids.length < 3 || busy;
+      $("startGame").textContent = ids.length < 3 ? "Waiting for 3 players…" : "Start the chaos ↗";
+    }
+    function renderAnswering(room) {
+      $("roundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
+      safeText($("promptTitle"), room.prompt || "A prompt is loading…");
+      const answers = room.answers || {};
+      const submitted = Boolean(answers[uid]);
+      $("answerInput").disabled = submitted || busy;
+      $("submitAnswer").disabled = submitted || busy;
+      $("submitAnswer").textContent = submitted ? "Answer locked ✓" : "Lock in answer";
+      $("answerStatus").classList.toggle("hidden", !submitted);
+      if (submitted) $("answerStatus").textContent = "Locked in. Waiting for everyone else to answer…";
+    }
+    function renderRewriting(room) {
+      $("rewriteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
+      const targetId = (room.assignments || {})[uid];
+      const answer = targetId && room.answers && room.answers[targetId];
+      safeText($("answerToReframe"), answer ? "“" + answer.text + "”" : "Your answer is being assigned…");
+      const submitted = Boolean((room.twists || {})[uid]);
+      $("rewriteInput").disabled = submitted || busy;
+      $("submitRewrite").disabled = submitted || busy || !answer;
+      $("submitRewrite").textContent = submitted ? "Post published ✓" : "Publish your slander";
+      $("rewriteStatus").classList.toggle("hidden", !submitted);
+      if (submitted) $("rewriteStatus").textContent = "Posted. The jury is assembling…";
+    }
+    function renderVoting(room) {
+      $("voteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
+      const ownVote = (room.votes || {})[uid];
+      const signature = JSON.stringify([room.twists || {}, room.answers || {}, ownVote || null]);
+      if (signature !== lastVoteSignature) {
+        lastVoteSignature = signature;
+        const container = $("votingCards");
+        container.replaceChildren();
+        if (ownVote) {
+          const status = document.createElement("div"); status.className = "status good"; status.textContent = "Vote locked. Waiting for the rest of the jury…"; container.append(status);
+        } else {
+          Object.keys(room.twists || {}).filter((authorId) => authorId !== uid).sort().forEach((authorId) => container.append(makeVoteCard(authorId, room)));
+          if (container.childElementCount === 0) {
+            const status = document.createElement("div"); status.className = "status"; status.textContent = "Waiting for more entries…"; container.append(status);
+          }
         }
       }
-
-      // Phase: Voting
-      if (room.state === "VOTING") {
-        renderVoting(room);
-        showScreen('screen-voting');
-      }
-
-      // Phase: Results
-      if (room.state === "RESULTS") {
-        renderScores(room.players);
-        showScreen('screen-results');
-      }
-    });
-  }
-
-  // Host starts the game
-  document.getElementById('btnStartGame').addEventListener('click', async () => {
-    const randomPrompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
-    await update(ref(db, `rooms/${currentRoom}`), {
-      state: "PROMPTS",
-      promptText: randomPrompt,
-      answers: null,
-      twists: null,
-      votes: null
-    });
-  });
-
-  // Player submits opinion
-  document.getElementById('btnSubmitAnswer').addEventListener('click', async () => {
-    const ans = document.getElementById('promptAnswer').value.trim();
-    if (!ans) return;
-
-    await set(ref(db, `rooms/${currentRoom}/answers/${playerId}`), ans);
-    document.getElementById('promptAnswer').value = "";
-    document.getElementById('screen-prompt').innerHTML = "<h3>Answer submitted! Waiting for others...</h3>";
-
-    // Host handles transition once all submit
-    checkPromptCompletion();
-  });
-
-  async function checkPromptCompletion() {
-    if (!isHost) return;
-    const snap = await get(ref(db, `rooms/${currentRoom}`));
-    const room = snap.val();
-    const playerIds = Object.keys(room.players);
-    const answerIds = Object.keys(room.answers || {});
-
-    if (answerIds.length === playerIds.length) {
-      // Circular assignment: Player A twists Player B's answer
-      const assignments = {};
-      for (let i = 0; i < playerIds.length; i++) {
-        const victimIndex = (i + 1) % playerIds.length;
-        assignments[playerIds[i]] = playerIds[victimIndex];
-      }
-
-      await update(ref(db, `rooms/${currentRoom}`), {
-        state: "TWIST",
-        assignments: assignments
+      $("voteStatus").classList.add("hidden");
+    }
+    function renderResults(room) {
+      $("resultRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
+      const reveal = $("roundReveal"); reveal.replaceChildren();
+      const voteMap = room.votes || {};
+      const assignments = room.assignments || {};
+      const answers = room.answers || {};
+      const twists = room.twists || {};
+      Object.keys(twists).sort((a,b) => {
+        const va = Object.values(voteMap).filter(v => v === a).length;
+        const vb = Object.values(voteMap).filter(v => v === b).length;
+        return vb - va;
+      }).forEach((authorId) => {
+        const wrap = document.createElement("div"); wrap.className = "vote-card"; wrap.style.cursor = "default";
+        const title = document.createElement("div"); title.className = "context"; title.textContent = twists[authorId].text;
+        const quote = document.createElement("div"); quote.className = "quote"; quote.textContent = "“" + ((answers[assignments[authorId]] && answers[assignments[authorId]].text) || "") + "”";
+        const votes = Object.values(voteMap).filter(v => v === authorId).length;
+        const credits = document.createElement("div"); credits.className = "meta"; credits.style.marginTop = "10px";
+        credits.textContent = "Reframed by " + playerNameFor(room, authorId) + " · Original answer by " + playerNameFor(room, assignments[authorId]) + " · " + votes + " vote(s)";
+        wrap.append(title, quote, credits); reveal.append(wrap);
       });
+      const players = room.players || {};
+      const ranked = Object.keys(players).sort((a,b) => (players[b].score || 0) - (players[a].score || 0));
+      $("scoreList").replaceChildren();
+      ranked.forEach((id, i) => addPlayerRow($("scoreList"), players[id].name || "Player", (i === 0 ? "Top of the chaos" : "Total score"), (players[id].score || 0) + " pts", i));
+      $("nextRound").textContent = Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS) ? "Reveal final standings ↗" : "Next round ↗";
+      $("nextRound").disabled = room.hostId !== uid || busy;
+      $("nextRound").classList.toggle("hidden", room.hostId !== uid);
     }
-  }
-
-  // Player submits the framed headline
-  document.getElementById('btnSubmitTwist').addEventListener('click', async () => {
-    const twist = document.getElementById('twistTitle').value.trim();
-    if (!twist) return;
-
-    await set(ref(db, `rooms/${currentRoom}/twists/${playerId}`), twist);
-    document.getElementById('twistTitle').value = "";
-    document.getElementById('screen-twist').innerHTML = "<h3>Post published! Waiting for others...</h3>";
-
-    checkTwistCompletion();
-  });
-
-  async function checkTwistCompletion() {
-    if (!isHost) return;
-    const snap = await get(ref(db, `rooms/${currentRoom}`));
-    const room = snap.val();
-    const playerIds = Object.keys(room.players);
-    const twistIds = Object.keys(room.twists || {});
-
-    if (twistIds.length === playerIds.length) {
-      await update(ref(db, `rooms/${currentRoom}`), { state: "VOTING" });
+    function renderFinished(room) {
+      const players = room.players || {};
+      const ranked = Object.keys(players).sort((a,b) => (players[b].score || 0) - (players[a].score || 0));
+      $("finalScoreList").replaceChildren();
+      ranked.forEach((id, i) => addPlayerRow($("finalScoreList"), players[id].name || "Player", i === 0 ? "👑 chaos champion" : "Final score", (players[id].score || 0) + " pts", i));
+      $("winnerPanel").replaceChildren();
+      const title = document.createElement("h2");
+      title.textContent = ranked.length ? "👑 " + playerNameFor(room, ranked[0]) + " wins." : "Nobody wins. Very on brand.";
+      $("winnerPanel").append(title);
+      $("playAgain").classList.toggle("hidden", room.hostId !== uid);
+      $("playAgainNote").textContent = room.hostId === uid ? "A rematch resets everyone's score." : "Only the host can start a rematch.";
     }
-  }
-
-  // Render Vote Cards
-  function renderVoting(room) {
-    const container = document.getElementById('votingCards');
-    container.innerHTML = "";
-
-    Object.keys(room.twists || {}).forEach(authorId => {
-      if (authorId === playerId) return; // Prevent voting on your own setup
-
-      const victimId = room.assignments[authorId];
-      const quote = room.answers[victimId];
-      const heading = room.twists[authorId];
-      const victimName = room.players[victimId]?.name || "Anonymous";
-
-      const card = document.createElement('div');
-      card.className = "card-option";
-      card.innerHTML = `
-        <div style="font-weight:bold; color:var(--highlight); margin-bottom:6px;">Forum: ${heading}</div>
-        <div class="quote-box">"${quote}"</div>
-        <small style="color:var(--dim)">- Written by ${victimName}</small>
-      `;
-      card.onclick = () => submitVote(authorId);
-      container.appendChild(card);
-    });
-  }
-
-  async function submitVote(votedAuthorId) {
-    await set(ref(db, `rooms/${currentRoom}/votes/${playerId}`), votedAuthorId);
-    document.getElementById('votingCards').innerHTML = "<h3>Vote cast! Tallying up...</h3>";
-
-    if (isHost) checkVoteCompletion();
-  }
-
-  async function checkVoteCompletion() {
-    const snap = await get(ref(db, `rooms/${currentRoom}`));
-    const room = snap.val();
-    const playerIds = Object.keys(room.players);
-    const votes = room.votes || {};
-
-    if (Object.keys(votes).length >= playerIds.length) {
-      const players = room.players;
-      Object.values(votes).forEach(targetAuthor => {
-        if (players[targetAuthor]) {
-          players[targetAuthor].score = (players[targetAuthor].score || 0) + 100;
+    function renderRoom() {
+      const room = currentRoom;
+      if (!room) return;
+      setConnection("online", "Live");
+      $("roomCodeDisplay").textContent = currentCode || "-----";
+      const phase = room.phase || "lobby";
+      if (phase !== lastPhase) {
+        lastPhase = phase;
+        if (phase === "lobby") showScreen("room");
+        else showScreen(phase);
+        if (phase === "answering") { $("answerInput").value = ""; }
+        if (phase === "rewriting") { $("rewriteInput").value = ""; lastVoteSignature = ""; }
+        if (phase === "voting") lastVoteSignature = "";
+      }
+      $("roundPill").textContent = "ROUND " + (room.round || 1) + " / " + (room.maxRounds || TOTAL_ROUNDS);
+      if (phase === "lobby") renderLobby(room);
+      if (phase === "answering") renderAnswering(room);
+      if (phase === "rewriting") renderRewriting(room);
+      if (phase === "voting") renderVoting(room);
+      if (phase === "results") renderResults(room);
+      if (phase === "finished") renderFinished(room);
+      maybeAdvance();
+    }
+    async function maybeAdvance() {
+      if (!currentRoomRef || !uid || !currentRoom || busy) return;
+      const current = currentRoom;
+      const participants = participantIds(current);
+      if (!participants.length) return;
+      let shouldTry = false;
+      if (current.phase === "answering") shouldTry = participants.every(id => current.answers && current.answers[id] && current.answers[id].text);
+      if (current.phase === "rewriting") shouldTry = participants.every(id => current.twists && current.twists[id] && current.twists[id].text);
+      if (current.phase === "voting") shouldTry = participants.every(id => current.votes && current.votes[id]);
+      if (!shouldTry) return;
+      try {
+        await runTransaction(currentRoomRef, (room) => {
+          if (!room || !Array.isArray(room.participants)) return;
+          const ids = room.participants;
+          if (room.phase === "answering" && ids.every(id => room.answers && room.answers[id] && room.answers[id].text)) {
+            const assignments = {};
+            ids.forEach((id, i) => { assignments[id] = ids[(i + 1) % ids.length]; });
+            room.phase = "rewriting";
+            room.assignments = assignments;
+            room.twists = {};
+            room.votes = {};
+            return room;
+          }
+          if (room.phase === "rewriting" && ids.every(id => room.twists && room.twists[id] && room.twists[id].text)) {
+            room.phase = "voting";
+            room.votes = {};
+            return room;
+          }
+          if (room.phase === "voting" && ids.every(id => room.votes && room.votes[id])) {
+            const tally = {};
+            ids.forEach(id => { tally[id] = 0; });
+            Object.values(room.votes).forEach(target => { if (Object.prototype.hasOwnProperty.call(tally, target)) tally[target] += 1; });
+            Object.keys(tally).forEach(id => {
+              if (room.players && room.players[id]) room.players[id].score = (room.players[id].score || 0) + tally[id] * 100;
+            });
+            room.phase = "results";
+            room.voteTally = tally;
+            return room;
+          }
+          return;
+        }, { applyLocally: false });
+      } catch (error) {
+        console.warn("Could not advance game phase", error);
+      }
+    }
+    function attachRoom(code) {
+      if (roomListener) roomListener();
+      currentCode = code;
+      currentRoomRef = ref(db, "rooms/" + code);
+      localStorage.setItem("is_room_code", code);
+      $("roomCodeDisplay").textContent = code;
+      roomListener = onValue(currentRoomRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          say("This room no longer exists.");
+          returnToLobby();
+          return;
         }
+        currentRoom = snapshot.val();
+        renderRoom();
+      }, (error) => {
+        setConnection("offline", "Access denied");
+        say("Database access denied. Check the Firebase setup steps in the project README.");
+        console.error(error);
       });
-
-      await update(ref(db, `rooms/${currentRoom}`), {
-        players: players,
-        state: "RESULTS"
-      });
+      setConnection("online", "Live");
+      onDisconnect(ref(db, "rooms/" + code + "/players/" + uid + "/online")).set(false).catch(() => {});
     }
-  }
+    async function createRoom(name) {
+      let code = null;
+      for (let i = 0; i < 6; i++) {
+        const candidate = newCode();
+        const candidateRef = ref(db, "rooms/" + candidate);
+        const result = await runTransaction(candidateRef, (room) => {
+          if (room) return;
+          const players = {};
+          players[uid] = { name, score: 0, joinedAt: Date.now(), online: true };
+          return {
+            hostId: uid, phase: "lobby", round: 1, maxRounds: TOTAL_ROUNDS,
+            createdAt: Date.now(), players, participants: null,
+            prompt: null, answers: {}, assignments: {}, twists: {}, votes: {}
+          };
+        }, { applyLocally: false });
+        if (result.committed) { code = candidate; break; }
+      }
+      if (!code) throw new Error("Couldn't find a free room code. Try again.");
+      localStorage.setItem("is_player_name", name);
+      attachRoom(code);
+      return code;
+    }
+    async function joinRoom(code, name) {
+      const roomRef = ref(db, "rooms/" + code);
+      const snapshot = await get(roomRef);
+      if (!snapshot.exists()) throw new Error("Room not found. Check the code and try again.");
+      const room = snapshot.val();
+      if (room.phase !== "lobby" && !(room.players && room.players[uid])) {
+        throw new Error("This game has already started. Ask the host for a new room.");
+      }
+      const result = await runTransaction(roomRef, (latest) => {
+        if (!latest) return;
+        if (!latest.players) latest.players = {};
+        if (latest.phase !== "lobby" && !latest.players[uid]) return;
+        if (!latest.players[uid] && Object.keys(latest.players).length >= MAX_PLAYERS) return;
+        const old = latest.players[uid] || { score: 0, joinedAt: Date.now() };
+        latest.players[uid] = { ...old, name, online: true };
+        return latest;
+      }, { applyLocally: false });
+      if (!result.committed) throw new Error("Couldn't join that room. It may have started or be full.");
+      localStorage.setItem("is_player_name", name);
+      attachRoom(code);
+      return code;
+    }
+    async function enterRoom() {
+      if (busy || !uid) return;
+      const name = $("playerName").value.trim().replace(/\s+/g, " ");
+      const code = $("joinCode").value.trim().toUpperCase();
+      clearError("lobbyError");
+      if (!name) { showError("lobbyError", "Pick a nickname first."); return; }
+      if (name.length > 18) { showError("lobbyError", "Keep your nickname under 18 characters."); return; }
+      if (code && !/^[A-Z0-9]{5}$/.test(code)) { showError("lobbyError", "Room codes have 5 letters or numbers."); return; }
+      busy = true;
+      $("enterRoom").disabled = true;
+      $("enterRoom").textContent = code ? "Joining the room…" : "Creating your room…";
+      try {
+        if (code) await joinRoom(code, name);
+        else await createRoom(name);
+      } catch (error) {
+        showError("lobbyError", error && error.message ? error.message : "Couldn't connect to the room.");
+      } finally {
+        busy = false;
+        $("enterRoom").disabled = false;
+        $("enterRoom").textContent = "Create a room ↗";
+      }
+    }
+    async function startGame() {
+      if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
+      const ids = Object.keys(currentRoom.players || {});
+      if (ids.length < 3) { say("Invite at least 3 players to start."); return; }
+      busy = true;
+      $("startGame").disabled = true;
+      const prompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+      try {
+        await runTransaction(currentRoomRef, (room) => {
+          if (!room || room.phase !== "lobby" || room.hostId !== uid || Object.keys(room.players || {}).length < 3) return;
+          room.phase = "answering";
+          room.round = 1;
+          room.maxRounds = TOTAL_ROUNDS;
+          room.participants = Object.keys(room.players);
+          room.prompt = prompt;
+          room.answers = {};
+          room.assignments = {};
+          room.twists = {};
+          room.votes = {};
+          room.voteTally = {};
+          Object.keys(room.players).forEach(id => { room.players[id].score = 0; });
+          return room;
+        }, { applyLocally: false });
+      } catch (error) { say("Couldn't start. Check the database connection."); }
+      finally { busy = false; }
+    }
+    async function submitAnswer() {
+      const text = $("answerInput").value.trim();
+      if (!text || text.length > 240 || busy || !currentRoomRef) return;
+      busy = true; $("submitAnswer").disabled = true;
+      try {
+        await set(ref(db, "rooms/" + currentCode + "/answers/" + uid), { text, createdAt: Date.now() });
+        $("answerInput").value = "";
+        say("Answer locked.");
+      } catch (error) { say("Couldn't submit. Check your connection."); }
+      finally { busy = false; if (currentRoom) renderRoom(); }
+    }
+    async function submitRewrite() {
+      const text = $("rewriteInput").value.trim();
+      if (!text || text.length > 240 || busy || !currentRoomRef) return;
+      busy = true; $("submitRewrite").disabled = true;
+      try {
+        await set(ref(db, "rooms/" + currentCode + "/twists/" + uid), { text, createdAt: Date.now() });
+        $("rewriteInput").value = "";
+        say("Context published.");
+      } catch (error) { say("Couldn't publish. Check your connection."); }
+      finally { busy = false; if (currentRoom) renderRoom(); }
+    }
+    async function castVote(authorId) {
+      if (!currentRoomRef || busy || !currentRoom || authorId === uid || (currentRoom.votes && currentRoom.votes[uid])) return;
+      busy = true;
+      try {
+        await set(ref(db, "rooms/" + currentCode + "/votes/" + uid), authorId);
+        say("Vote locked.");
+      } catch (error) { say("Couldn't vote. Check your connection."); }
+      finally { busy = false; if (currentRoom) renderRoom(); }
+    }
+    async function nextRound() {
+      if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
+      busy = true; $("nextRound").disabled = true;
+      try {
+        await runTransaction(currentRoomRef, (room) => {
+          if (!room || room.phase !== "results" || room.hostId !== uid) return;
+          if (Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS)) {
+            room.phase = "finished";
+            return room;
+          }
+          room.round = Number(room.round || 1) + 1;
+          room.prompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+          room.phase = "answering";
+          room.answers = {};
+          room.assignments = {};
+          room.twists = {};
+          room.votes = {};
+          room.voteTally = {};
+          return room;
+        }, { applyLocally: false });
+      } catch (error) { say("Couldn't start the next round."); }
+      finally { busy = false; if (currentRoom) renderRoom(); }
+    }
+    async function playAgain() {
+      if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
+      busy = true; $("playAgain").disabled = true;
+      try {
+        await runTransaction(currentRoomRef, (room) => {
+          if (!room || room.phase !== "finished" || room.hostId !== uid) return;
+          room.phase = "lobby"; room.round = 1; room.prompt = null; room.participants = null;
+          room.answers = {}; room.assignments = {}; room.twists = {}; room.votes = {}; room.voteTally = {};
+          Object.keys(room.players || {}).forEach(id => { room.players[id].score = 0; });
+          return room;
+        }, { applyLocally: false });
+      } catch (error) { say("Couldn't reset the room."); }
+      finally { busy = false; $("playAgain").disabled = false; }
+    }
+    async function copyCode() {
+      if (!currentCode) return;
+      try { await navigator.clipboard.writeText(currentCode); say("Room code copied."); }
+      catch (_) { window.prompt("Copy this room code for your friends:", currentCode); }
+    }
+    function returnToLobby() {
+      if (roomListener) { roomListener(); roomListener = null; }
+      currentCode = null; currentRoomRef = null; currentRoom = null; lastPhase = ""; lastVoteSignature = "";
+      localStorage.removeItem("is_room_code");
+      showScreen("lobby"); setConnection("online", "Connected");
+    }
+    async function tryResume() {
+      $("playerName").value = localStorage.getItem("is_player_name") || "";
+      const savedCode = localStorage.getItem("is_room_code");
+      if (!savedCode || !uid) { setConnection("online", "Connected"); return; }
+      try {
+        const roomSnapshot = await get(ref(db, "rooms/" + savedCode));
+        if (!roomSnapshot.exists() || !(roomSnapshot.val().players && roomSnapshot.val().players[uid])) {
+          localStorage.removeItem("is_room_code"); setConnection("online", "Connected"); return;
+        }
+        const playerRef = ref(db, "rooms/" + savedCode + "/players/" + uid);
+        await update(playerRef, { online: true });
+        attachRoom(savedCode);
+      } catch (error) {
+        console.warn("Could not resume previous room", error);
+        setConnection("offline", "Setup needed");
+      }
+    }
 
-  // Display Leaderboard
-  function renderScores(players) {
-    const list = document.getElementById('scoresList');
-    const sorted = Object.values(players).sort((a, b) => b.score - a.score);
-    list.innerHTML = sorted.map(p => `<li><span>${p.name}</span><strong>${p.score} pts</strong></li>`).join('');
-  }
+    $("enterRoom").addEventListener("click", enterRoom);
+    $("playerName").addEventListener("keydown", e => { if (e.key === "Enter") $("joinCode").focus(); });
+    $("joinCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0,5); });
+    $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") enterRoom(); });
+    $("startGame").addEventListener("click", startGame);
+    $("submitAnswer").addEventListener("click", submitAnswer);
+    $("submitRewrite").addEventListener("click", submitRewrite);
+    $("nextRound").addEventListener("click", nextRound);
+    $("playAgain").addEventListener("click", playAgain);
+    $("copyRoomCode").addEventListener("click", copyCode);
 
-  // Next round
-  document.getElementById('btnNextRound').addEventListener('click', async () => {
-    const randomPrompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
-    await update(ref(db, `rooms/${currentRoom}`), {
-      state: "PROMPTS",
-      promptText: randomPrompt,
-      answers: null,
-      twists: null,
-      votes: null,
-      assignments: null
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        uid = user.uid;
+        setConnection("online", "Connected");
+        await tryResume();
+      } else {
+        setConnection("", "Signing in");
+      }
     });
-  });
-</script>
+    signInAnonymously(auth).catch((error) => {
+      console.error("Anonymous sign-in failed", error);
+      setConnection("offline", "Setup needed");
+      showError("lobbyError", "Firebase anonymous sign-in isn't enabled yet. Open the project's README and complete the one-time Firebase setup.");
+    });
+    window.addEventListener("online", () => setConnection("online", "Connected"));
+    window.addEventListener("offline", () => setConnection("offline", "Offline"));
+  </script>
 </body>
 </html>
