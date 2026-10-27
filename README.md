@@ -21,6 +21,12 @@ The static website is hosted by GitHub Pages. Firebase Realtime Database and ano
 
 The Firebase web config in `index.html` is a client identifier, not an admin credential. The database rules are important; do not use unrestricted public read/write rules.
 
+### If room creation says "Permission denied"
+
+Publish the **latest** `database.rules.json` from this repository in Firebase Console → Realtime Database → Rules. The room-creation transaction must be allowed to read an unused room-code path before it can create the room. The current room-level read rule therefore allows authenticated reads when the room does not exist, while existing rooms remain readable only to their players.
+
+Also confirm Firebase Authentication → Sign-in method → **Anonymous** is enabled. Changes to this repository's rules file do not automatically publish the rules to Firebase; you must press **Publish** in the Firebase Console (or deploy with the Firebase CLI).
+
 ## How to play
 
 - One player creates a room and shares its five-character code.
