@@ -600,7 +600,8 @@
           room.twists = {};
           room.votes = {};
           room.voteTally = {};
-          Object.keys(room.players).forEach(id => { room.players[id].score = 0; });
+          room.scores = {};
+          Object.keys(room.players).forEach(id => { room.scores[id] = 0; });
           return room;
         }, { applyLocally: false });
       } catch (error) { say("Couldn't start. Check the database connection."); }
