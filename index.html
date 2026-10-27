@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twist The Context</title>
+  <style>
+    :root {
+      --bg: #1e1e2f;
+      --card: #27293d;
+      --accent: #e14eca;
+      --highlight: #00f2c3;
+      --text: #ffffff;
+      --dim: #9a9a9a;
+    }
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .container { max-width: 520px; width: 100%; background: var(--card); border-radius: 12px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    h1, h2 { text-align: center; margin-top: 0; }
+    h1 { color: var(--highlight); }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    input, button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; margin-bottom: 12px; }
+    input { background: #1a1a27; color: #fff; border: 1px solid #444; }
+    input:focus { border-color: var(--highlight); outline: none; }
+    button { background: var(--accent); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button:hover { opacity: 0.9; }
+    button.alt { background: #3d3f58; }
+    .player-list { list-style: none; padding: 0; }
+    .player-list li { background: #1a1a27; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .quote-box { background: #1a1a27; border-left: 4px solid var(--highlight); padding: 14px; margin-bottom: 14px; border-radius: 0 8px 8px 0; font-style: italic; font-size: 1.1em; }
+    .card-option { background: #1a1a27; border: 2px solid #333; padding: 16px; border-radius: 8px; margin-bottom: 12px; cursor: pointer; }
+    .card-option:hover { border-color: var(--highlight); }
+    .tag { font-size: 0.85em; color: var(--dim); margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Lobby Join Screen -->
+  <div id="screen-lobby" class="screen active">
+    <h1>Twist the Context</h1>
+    <input type="text" id="username" placeholder="Your Name" maxlength="14">
+    <input type="text" id="roomCode" placeholder="Room Code (Leave blank to create)" maxlength="5" style="text-transform:uppercase">
+    <button id="btnJoin">Join / Host Game</button>
+  </div>
+
+  <!-- Waiting Room -->
+  <div id="screen-waiting" class="screen">
+    <h2>Room: <span id="displayRoomCode" style="color:var(--highlight)"></span></h2>
+    <p style="text-align:center; color: var(--dim);">Share this code with your friends</p>
+    <ul id="waitingPlayers" class="player-list"></ul>
+    <button id="btnStartGame" style="display:none;">Start Game</button>
+  </div>
+
+  <!-- Phase 1: Answering Prompt -->
+  <div id="screen-prompt" class="screen">
+    <p class="tag">ROUND 1: THE OPINION</p>
+    <h2 id="promptQuestion">Loading prompt...</h2>
+    <input type="text" id="promptAnswer" placeholder="Write an honest or funny reply...">
+    <button id="btnSubmitAnswer">Submit Answer</button>
+  </div>
+
+  <!-- Phase 2: Twisting The Context -->
+  <div id="screen-twist" class="screen">
+    <p class="tag">ROUND 2: THE FRAME-UP</p>
+    <p>Another player wrote this answer:</p>
+    <div id="victimQuote" class="quote-box"></div>
+    <input type="text" id="twistTitle" placeholder="Write a forum/headline context that makes them look bad...">
+    <button id="btnSubmitTwist">Publish Post</button>
+  </div>
+
+  <!-- Phase 3: Voting Screen -->
+  <div id="screen-voting" class="screen">
+    <p class="tag">ROUND 3: VOTE</p>
+    <h2>Which post is funnier/worse?</h2>
+    <div id="votingCards"></div>
+  </div>
+
+  <!-- Phase 4: Results & Leaderboard -->
+  <div id="screen-results" class="screen">
+    <h2>Scores</h2>
+    <ul id="scoresList" class="player-list"></ul>
+    <button id="btnNextRound" style="display:none;">Next Round</button>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+     import { initializeApp } from "firebase/app";
+     import { getAnalytics } from "firebase/analytics";
+
+  // TODO: Replace with your Firebase credentials from Console
+     const firebaseConfig = {
+  	apiKey: "AIzaSyDVE-tP7ZvQjBGWXwwRHbvXMw-uWsocBG8",
+  	authDomain: "internet-sucks.firebaseapp.com",
+  	databaseURL: "https://internet-sucks-default-rtdb.firebaseio.com",
+  	projectId: "internet-sucks",
+  	storageBucket: "internet-sucks.firebasestorage.app",
+  	messagingSenderId: "876270281291",
+  	appId: "1:876270281291:web:ab8a045b324b9e963da3ce",
+  	measurementId: "G-QDFR9P60PF"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const PROMPTS = [
+    "What is your guilty pleasure snack?",
+    "What do you do right before going to bed?",
+    "What is the first thing you look for in a partner?",
+    "What is your honest opinion about gym culture?",
+    "What is an activity that always makes you cry?",
+    "Describe your favorite weekend hobby in 3 words."
+  ];
+
+  let currentRoom = null;
+  let playerId = "p_" + Math.random().toString(36).substring(2, 8);
+  let playerName = "";
+  let isHost = false;
+
+  const showScreen = (id) => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  };
+
+  // Join or Host Room
+  document.getElementById('btnJoin').addEventListener('click', async () => {
+    playerName = document.getElementById('username').value.trim();
+    let code = document.getElementById('roomCode').value.trim().toUpperCase();
+
+    if (!playerName) return alert("Please enter your name.");
+
+    if (!code) {
+      code = Math.random().toString(36).substring(2, 6).toUpperCase();
+      isHost = true;
+    }
+
+    currentRoom = code;
+    const roomRef = ref(db, `rooms/${currentRoom}`);
+    const snap = await get(roomRef);
+
+    if (!snap.exists()) {
+      if (!isHost) isHost = true;
+      await set(roomRef, {
+        host: playerId,
+        state: "WAITING",
+        players: { [playerId]: { name: playerName, score: 0 } }
+      });
+    } else {
+      const roomData = snap.val();
+      if (roomData.host === playerId) isHost = true;
+      await update(ref(db, `rooms/${currentRoom}/players/${playerId}`), {
+        name: playerName,
+        score: 0
+      });
+    }
+
+    document.getElementById('displayRoomCode').innerText = currentRoom;
+    showScreen('screen-waiting');
+    listenToRoom();
+  });
+
+  // State Listener
+  function listenToRoom() {
+    onValue(ref(db, `rooms/${currentRoom}`), (snapshot) => {
+      const room = snapshot.val();
+      if (!room) return;
+
+      const players = room.players || {};
+      const playerIds = Object.keys(players);
+
+      if (room.host === playerId) {
+        isHost = true;
+        document.getElementById('btnStartGame').style.display = 'block';
+        document.getElementById('btnNextRound').style.display = 'block';
+      }
+
+      // Lobby Updates
+      if (room.state === "WAITING") {
+        const list = document.getElementById('waitingPlayers');
+        list.innerHTML = playerIds.map(id => `<li>${players[id].name} ${id === room.host ? '(Host)' : ''}</li>`).join('');
+      }
+
+      // Phase: Prompts
+      if (room.state === "PROMPTS") {
+        document.getElementById('promptQuestion').innerText = room.promptText;
+        showScreen('screen-prompt');
+      }
+
+      // Phase: Twist Context
+      if (room.state === "TWIST") {
+        const assignment = room.assignments ? room.assignments[playerId] : null;
+        if (assignment && room.answers && room.answers[assignment]) {
+          document.getElementById('victimQuote').innerText = `"${room.answers[assignment]}"`;
+          showScreen('screen-twist');
+        }
+      }
+
+      // Phase: Voting
+      if (room.state === "VOTING") {
+        renderVoting(room);
+        showScreen('screen-voting');
+      }
+
+      // Phase: Results
+      if (room.state === "RESULTS") {
+        renderScores(room.players);
+        showScreen('screen-results');
+      }
+    });
+  }
+
+  // Host starts the game
+  document.getElementById('btnStartGame').addEventListener('click', async () => {
+    const randomPrompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+    await update(ref(db, `rooms/${currentRoom}`), {
+      state: "PROMPTS",
+      promptText: randomPrompt,
+      answers: null,
+      twists: null,
+      votes: null
+    });
+  });
+
+  // Player submits opinion
+  document.getElementById('btnSubmitAnswer').addEventListener('click', async () => {
+    const ans = document.getElementById('promptAnswer').value.trim();
+    if (!ans) return;
+
+    await set(ref(db, `rooms/${currentRoom}/answers/${playerId}`), ans);
+    document.getElementById('promptAnswer').value = "";
+    document.getElementById('screen-prompt').innerHTML = "<h3>Answer submitted! Waiting for others...</h3>";
+
+    // Host handles transition once all submit
+    checkPromptCompletion();
+  });
+
+  async function checkPromptCompletion() {
+    if (!isHost) return;
+    const snap = await get(ref(db, `rooms/${currentRoom}`));
+    const room = snap.val();
+    const playerIds = Object.keys(room.players);
+    const answerIds = Object.keys(room.answers || {});
+
+    if (answerIds.length === playerIds.length) {
+      // Circular assignment: Player A twists Player B's answer
+      const assignments = {};
+      for (let i = 0; i < playerIds.length; i++) {
+        const victimIndex = (i + 1) % playerIds.length;
+        assignments[playerIds[i]] = playerIds[victimIndex];
+      }
+
+      await update(ref(db, `rooms/${currentRoom}`), {
+        state: "TWIST",
+        assignments: assignments
+      });
+    }
+  }
+
+  // Player submits the framed headline
+  document.getElementById('btnSubmitTwist').addEventListener('click', async () => {
+    const twist = document.getElementById('twistTitle').value.trim();
+    if (!twist) return;
+
+    await set(ref(db, `rooms/${currentRoom}/twists/${playerId}`), twist);
+    document.getElementById('twistTitle').value = "";
+    document.getElementById('screen-twist').innerHTML = "<h3>Post published! Waiting for others...</h3>";
+
+    checkTwistCompletion();
+  });
+
+  async function checkTwistCompletion() {
+    if (!isHost) return;
+    const snap = await get(ref(db, `rooms/${currentRoom}`));
+    const room = snap.val();
+    const playerIds = Object.keys(room.players);
+    const twistIds = Object.keys(room.twists || {});
+
+    if (twistIds.length === playerIds.length) {
+      await update(ref(db, `rooms/${currentRoom}`), { state: "VOTING" });
+    }
+  }
+
+  // Render Vote Cards
+  function renderVoting(room) {
+    const container = document.getElementById('votingCards');
+    container.innerHTML = "";
+
+    Object.keys(room.twists || {}).forEach(authorId => {
+      if (authorId === playerId) return; // Prevent voting on your own setup
+
+      const victimId = room.assignments[authorId];
+      const quote = room.answers[victimId];
+      const heading = room.twists[authorId];
+      const victimName = room.players[victimId]?.name || "Anonymous";
+
+      const card = document.createElement('div');
+      card.className = "card-option";
+      card.innerHTML = `
+        <div style="font-weight:bold; color:var(--highlight); margin-bottom:6px;">Forum: ${heading}</div>
+        <div class="quote-box">"${quote}"</div>
+        <small style="color:var(--dim)">- Written by ${victimName}</small>
+      `;
+      card.onclick = () => submitVote(authorId);
+      container.appendChild(card);
+    });
+  }
+
+  async function submitVote(votedAuthorId) {
+    await set(ref(db, `rooms/${currentRoom}/votes/${playerId}`), votedAuthorId);
+    document.getElementById('votingCards').innerHTML = "<h3>Vote cast! Tallying up...</h3>";
+
+    if (isHost) checkVoteCompletion();
+  }
+
+  async function checkVoteCompletion() {
+    const snap = await get(ref(db, `rooms/${currentRoom}`));
+    const room = snap.val();
+    const playerIds = Object.keys(room.players);
+    const votes = room.votes || {};
+
+    if (Object.keys(votes).length >= playerIds.length) {
+      const players = room.players;
+      Object.values(votes).forEach(targetAuthor => {
+        if (players[targetAuthor]) {
+          players[targetAuthor].score = (players[targetAuthor].score || 0) + 100;
+        }
+      });
+
+      await update(ref(db, `rooms/${currentRoom}`), {
+        players: players,
+        state: "RESULTS"
+      });
+    }
+  }
+
+  // Display Leaderboard
+  function renderScores(players) {
+    const list = document.getElementById('scoresList');
+    const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+    list.innerHTML = sorted.map(p => `<li><span>${p.name}</span><strong>${p.score} pts</strong></li>`).join('');
+  }
+
+  // Next round
+  document.getElementById('btnNextRound').addEventListener('click', async () => {
+    const randomPrompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+    await update(ref(db, `rooms/${currentRoom}`), {
+      state: "PROMPTS",
+      promptText: randomPrompt,
+      answers: null,
+      twists: null,
+      votes: null,
+      assignments: null
+    });
+  });
+</script>
+</body>
+</html>
