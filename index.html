@@ -401,18 +401,20 @@
         wrap.append(title, quote, credits); reveal.append(wrap);
       });
       const players = room.players || {};
-      const ranked = Object.keys(players).sort((a,b) => (players[b].score || 0) - (players[a].score || 0));
+      const scores = room.scores || {};
+      const ranked = Object.keys(players).sort((a,b) => (scores[b] || 0) - (scores[a] || 0));
       $("scoreList").replaceChildren();
-      ranked.forEach((id, i) => addPlayerRow($("scoreList"), players[id].name || "Player", (i === 0 ? "Top of the chaos" : "Total score"), (players[id].score || 0) + " pts", i));
+      ranked.forEach((id, i) => addPlayerRow($("scoreList"), players[id].name || "Player", (i === 0 ? "Top of the chaos" : "Total score"), (scores[id] || 0) + " pts", i));
       $("nextRound").textContent = Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS) ? "Reveal final standings ↗" : "Next round ↗";
       $("nextRound").disabled = room.hostId !== uid || busy;
       $("nextRound").classList.toggle("hidden", room.hostId !== uid);
     }
     function renderFinished(room) {
       const players = room.players || {};
-      const ranked = Object.keys(players).sort((a,b) => (players[b].score || 0) - (players[a].score || 0));
+      const scores = room.scores || {};
+      const ranked = Object.keys(players).sort((a,b) => (scores[b] || 0) - (scores[a] || 0));
       $("finalScoreList").replaceChildren();
-      ranked.forEach((id, i) => addPlayerRow($("finalScoreList"), players[id].name || "Player", i === 0 ? "👑 chaos champion" : "Final score", (players[id].score || 0) + " pts", i));
+      ranked.forEach((id, i) => addPlayerRow($("finalScoreList"), players[id].name || "Player", i === 0 ? "👑 chaos champion" : "Final score", (scores[id] || 0) + " pts", i));
       $("winnerPanel").replaceChildren();
       const title = document.createElement("h2");
       title.textContent = ranked.length ? "👑 " + playerNameFor(room, ranked[0]) + " wins." : "Nobody wins. Very on brand.";
@@ -446,6 +448,7 @@
     async function maybeAdvance() {
       if (!currentRoomRef || !uid || !currentRoom || busy) return;
       const current = currentRoom;
+      if (current.hostId !== uid) return;
       const participants = participantIds(current);
       if (!participants.length) return;
       let shouldTry = false;
@@ -475,8 +478,9 @@
             const tally = {};
             ids.forEach(id => { tally[id] = 0; });
             Object.values(room.votes).forEach(target => { if (Object.prototype.hasOwnProperty.call(tally, target)) tally[target] += 1; });
+            if (!room.scores) room.scores = {};
             Object.keys(tally).forEach(id => {
-              if (room.players && room.players[id]) room.players[id].score = (room.players[id].score || 0) + tally[id] * 100;
+              room.scores[id] = (room.scores[id] || 0) + tally[id] * 100;
             });
             room.phase = "results";
             room.voteTally = tally;
@@ -518,10 +522,10 @@
         const result = await runTransaction(candidateRef, (room) => {
           if (room) return;
           const players = {};
-          players[uid] = { name, score: 0, joinedAt: Date.now(), online: true };
+          players[uid] = { name, joinedAt: Date.now(), online: true };
           return {
             hostId: uid, phase: "lobby", round: 1, maxRounds: TOTAL_ROUNDS,
-            createdAt: Date.now(), players, participants: null,
+            createdAt: Date.now(), players, scores: { [uid]: 0 }, participants: null,
             prompt: null, answers: {}, assignments: {}, twists: {}, votes: {}
           };
         }, { applyLocally: false });
@@ -533,23 +537,21 @@
       return code;
     }
     async function joinRoom(code, name) {
-      const roomRef = ref(db, "rooms/" + code);
-      const snapshot = await get(roomRef);
-      if (!snapshot.exists()) throw new Error("Room not found. Check the code and try again.");
-      const room = snapshot.val();
-      if (room.phase !== "lobby" && !(room.players && room.players[uid])) {
+      const phaseSnapshot = await get(ref(db, "rooms/" + code + "/phase"));
+      if (!phaseSnapshot.exists()) throw new Error("Room not found. Check the code and try again.");
+      const phase = phaseSnapshot.val();
+      const playerRef = ref(db, "rooms/" + code + "/players/" + uid);
+      const existingSnapshot = await get(playerRef);
+      if (phase !== "lobby" && !existingSnapshot.exists()) {
         throw new Error("This game has already started. Ask the host for a new room.");
       }
-      const result = await runTransaction(roomRef, (latest) => {
-        if (!latest) return;
-        if (!latest.players) latest.players = {};
-        if (latest.phase !== "lobby" && !latest.players[uid]) return;
-        if (!latest.players[uid] && Object.keys(latest.players).length >= MAX_PLAYERS) return;
-        const old = latest.players[uid] || { score: 0, joinedAt: Date.now() };
-        latest.players[uid] = { ...old, name, online: true };
-        return latest;
-      }, { applyLocally: false });
-      if (!result.committed) throw new Error("Couldn't join that room. It may have started or be full.");
+      const playersSnapshot = await get(ref(db, "rooms/" + code + "/players"));
+      const players = playersSnapshot.val() || {};
+      if (!existingSnapshot.exists() && Object.keys(players).length >= MAX_PLAYERS) {
+        throw new Error("This room is full. Ask the host to start another room.");
+      }
+      const old = existingSnapshot.val() || { joinedAt: Date.now() };
+      await set(playerRef, { ...old, name, online: true, joinedAt: old.joinedAt || Date.now() });
       localStorage.setItem("is_player_name", name);
       attachRoom(code);
       return code;
@@ -590,6 +592,8 @@
           room.round = 1;
           room.maxRounds = TOTAL_ROUNDS;
           room.participants = Object.keys(room.players);
+          room.scores = {};
+          Object.keys(room.players).forEach(id => { room.scores[id] = 0; });
           room.prompt = prompt;
           room.answers = {};
           room.assignments = {};
@@ -664,7 +668,8 @@
           if (!room || room.phase !== "finished" || room.hostId !== uid) return;
           room.phase = "lobby"; room.round = 1; room.prompt = null; room.participants = null;
           room.answers = {}; room.assignments = {}; room.twists = {}; room.votes = {}; room.voteTally = {};
-          Object.keys(room.players || {}).forEach(id => { room.players[id].score = 0; });
+          room.scores = {};
+          Object.keys(room.players || {}).forEach(id => { room.scores[id] = 0; });
           return room;
         }, { applyLocally: false });
       } catch (error) { say("Couldn't reset the room."); }
