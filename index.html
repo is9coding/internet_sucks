@@ -1,752 +1,752 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#10101a">
-  <meta name="description" content="A chaotic little party game about taking things out of context.">
-  <title>Internet Sucks — four-round party game</title>
-  <style>:root{color-scheme:dark;--bg:#10101a;--panel:#191927;--panel2:#222236;--ink:#f7f4ff;--muted:#a5a2bd;--line:#36354e;--pink:#ff5fa2;--lime:#c8ff5a;--cyan:#73e6e6;--danger:#ff7b7b;--radius:22px}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 10% -20%,#35224a 0,transparent 46%),radial-gradient(ellipse at 100% 0,#183643 0,transparent 35%),var(--bg);color:var(--ink);font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button{border:0;cursor:pointer;transition:transform .12s ease,filter .12s ease}button:active{transform:scale(.985)}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}.shell{width:min(100% - 28px,700px);margin:0 auto;padding:22px 0 36px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.04em}.logo{width:40px;height:40px;display:grid;place-items:center;border-radius:13px;background:var(--lime);color:#151521;font-size:23px;transform:rotate(-7deg);box-shadow:4px 4px 0 #705ca4}.brand small{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-top:2px}.connection{font-size:11px;font-weight:800;display:flex;align-items:center;gap:7px;color:var(--muted);padding:8px 10px;border:1px solid var(--line);border-radius:99px}.dot{width:7px;height:7px;border-radius:50%;background:#e0b35b;box-shadow:0 0 0 3px #e0b35b22}.dot.online{background:var(--lime);box-shadow:0 0 0 3px #c8ff5a22}.dot.offline{background:var(--danger);box-shadow:0 0 0 3px #ff7b7b22}.hero{padding:28px 22px 24px;background:linear-gradient(145deg,#242238,#171725 70%);border:1px solid #39364f;border-radius:28px;box-shadow:0 22px 70px #0004;position:relative;overflow:hidden}.eyebrow{font-size:11px;font-weight:900;letter-spacing:.17em;text-transform:uppercase;color:var(--lime);margin-bottom:12px}h1{font-size:clamp(39px,9vw,66px);letter-spacing:-.075em;line-height:.92;margin:0 0 16px;font-weight:1000;max-width:560px}h1 em{font-style:normal;color:var(--pink)}h2{font-size:clamp(23px,6vw,34px);letter-spacing:-.05em;line-height:1.05;margin:0 0 14px}h3{font-size:17px;letter-spacing:-.02em;margin:0 0 8px}p{line-height:1.55;color:var(--muted);margin:0 0 16px}.lead{font-size:16px;max-width:510px}.sticker{position:absolute;right:20px;top:24px;border:2px solid var(--pink);color:var(--pink);font-size:10px;font-weight:1000;letter-spacing:.08em;padding:8px 10px;border-radius:9px;transform:rotate(9deg)}.card{margin-top:14px;padding:22px;background:#191927eF;border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 12px 30px #0002}.screen{display:none}.screen.active{display:block}.field-label{display:block;color:#d4d1e7;font-size:12px;font-weight:850;letter-spacing:.04em;margin:0 0 7px}input,textarea{width:100%;background:#10101b;color:var(--ink);border:1px solid #41405b;border-radius:13px;padding:14px 15px;margin:0 0 15px;min-height:50px}input::placeholder,textarea::placeholder{color:#77758f}textarea{resize:vertical;min-height:112px;line-height:1.45}.row{display:flex;gap:10px;align-items:center}.row>*{min-width:0}.row .grow{flex:1}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:13px 17px;border-radius:13px;background:var(--lime);color:#181824;font-weight:950;width:100%}.btn.secondary{background:#2b2a40;color:var(--ink);border:1px solid #45435f}.btn.pink{background:var(--pink);color:#211522}.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}.btn:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.5)}.subtle{font-size:12px;color:var(--muted)}.howto{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.howto div{padding:12px 10px;border-radius:14px;border:1px solid var(--line);background:#171725}.howto b{display:block;color:var(--cyan);font-size:12px;margin-bottom:5px}.howto span{font-size:11px;line-height:1.4;color:var(--muted)}.roombar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:17px}.roomcode{font-size:21px;letter-spacing:.18em;font-weight:1000;color:var(--lime);font-variant-numeric:tabular-nums}.pill{display:inline-flex;gap:7px;align-items:center;padding:7px 10px;background:#29283d;border:1px solid #41405a;border-radius:99px;color:#d7d4e9;font-size:11px;font-weight:850}.kicker{font-size:11px;font-weight:950;letter-spacing:.16em;color:var(--pink);text-transform:uppercase;margin-bottom:9px}.status{padding:12px 14px;border-radius:12px;background:#222237;color:var(--muted);font-size:13px;line-height:1.5;margin-top:12px}.status.good{background:#243321;color:#d8ffb1}.status.bad{background:#3a222e;color:#ffd3e3}.playerlist,.scorelist{list-style:none;padding:0;margin:14px 0}.playerlist li,.scorelist li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;background:#11111c;border:1px solid #302f45;border-radius:13px;margin-bottom:8px}.person{display:flex;align-items:center;gap:10px;min-width:0}.avatar{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#313048;color:var(--cyan);font-weight:1000}.person-name{font-weight:850;overflow-wrap:anywhere}.meta{font-size:11px;color:var(--muted)}.tag{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:99px;padding:5px 7px;background:#2c2b41;color:var(--cyan)}.quote{padding:16px 17px;background:#10101b;border:1px solid #39384f;border-left:4px solid var(--cyan);border-radius:0 14px 14px 0;font-size:18px;line-height:1.45;font-weight:800;margin:15px 0;overflow-wrap:anywhere}.photo-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.photo-choice{display:flex;flex-direction:column;gap:9px;text-align:left;padding:10px;background:#10101b;border:2px solid #3c3a55;border-radius:16px;color:var(--ink);min-width:0}.photo-choice:hover{border-color:var(--lime)}.photo-choice.selected{border-color:var(--lime);box-shadow:0 0 0 2px #c8ff5a20}.photo-choice:disabled{cursor:default;opacity:.8}.photo-thumb{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;border-radius:10px;background:#2b2a40}.photo-choice-title{font-size:12px;line-height:1.35;font-weight:850}.photo-choice-cta{font-size:10px;color:var(--lime);font-weight:950;letter-spacing:.08em;text-transform:uppercase}.photo-display{display:block;width:100%;max-height:360px;aspect-ratio:4/5;object-fit:cover;border-radius:13px;background:#2b2a40;margin:12px 0}.photo-caption{font-size:15px;line-height:1.5;font-weight:700;overflow-wrap:anywhere;margin-top:9px}.vote-card{width:100%;text-align:left;padding:16px;margin:0 0 12px;background:#11111c;border:1px solid #45435d;color:var(--ink);border-radius:16px}.vote-card:hover{border-color:var(--lime);background:#1a1a29}.vote-card .context{font-size:17px;font-weight:900;line-height:1.35;overflow-wrap:anywhere}.vote-card .quote{font-size:14px;font-weight:650;margin:12px 0 0;padding:12px;border-left-width:3px}.vote-card .hint{font-size:10px;color:var(--muted);font-weight:900;letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}.score{color:var(--lime);font-size:15px;font-weight:1000;white-space:nowrap}.rank{color:var(--pink);font-size:13px;font-weight:1000}.divider{height:1px;background:var(--line);margin:16px 0}.hidden{display:none!important}.footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#77758f;font-size:11px;padding:17px 4px 0}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:10;background:#f6f0ff;color:#1b1825;padding:12px 16px;border-radius:14px;font-size:13px;font-weight:800;box-shadow:0 12px 40px #0007;max-width:calc(100% - 28px);text-align:center}@media(min-width:600px){.shell{padding-top:32px}.hero{padding:34px}.card{padding:26px}.two-col{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:start}.two-col .card{margin-top:0}}@media(max-width:390px){.howto{grid-template-columns:1fr}.howto div{display:flex;gap:10px;align-items:center}.howto b{margin:0;min-width:55px}.hero{padding:22px 18px}.card{padding:18px}.sticker{right:14px;top:18px}.connection{font-size:10px}}@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10101a">
+<meta name="description" content="A chaotic little party game about taking things out of context.">
+<title>Internet Sucks — four-round party game</title>
+<style>:root{color-scheme:dark;--bg:#10101a;--panel:#191927;--panel2:#222236;--ink:#f7f4ff;--muted:#a5a2bd;--line:#36354e;--pink:#ff5fa2;--lime:#c8ff5a;--cyan:#73e6e6;--danger:#ff7b7b;--radius:22px}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 10% -20%,#35224a 0,transparent 46%),radial-gradient(ellipse at 100% 0,#183643 0,transparent 35%),var(--bg);color:var(--ink);font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button{border:0;cursor:pointer;transition:transform .12s ease,filter .12s ease}button:active{transform:scale(.985)}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}.shell{width:min(100% - 28px,700px);margin:0 auto;padding:22px 0 36px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.04em}.logo{width:40px;height:40px;display:grid;place-items:center;border-radius:13px;background:var(--lime);color:#151521;font-size:23px;transform:rotate(-7deg);box-shadow:4px 4px 0 #705ca4}.brand small{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-top:2px}.connection{font-size:11px;font-weight:800;display:flex;align-items:center;gap:7px;color:var(--muted);padding:8px 10px;border:1px solid var(--line);border-radius:99px}.dot{width:7px;height:7px;border-radius:50%;background:#e0b35b;box-shadow:0 0 0 3px #e0b35b22}.dot.online{background:var(--lime);box-shadow:0 0 0 3px #c8ff5a22}.dot.offline{background:var(--danger);box-shadow:0 0 0 3px #ff7b7b22}.hero{padding:28px 22px 24px;background:linear-gradient(145deg,#242238,#171725 70%);border:1px solid #39364f;border-radius:28px;box-shadow:0 22px 70px #0004;position:relative;overflow:hidden}.eyebrow{font-size:11px;font-weight:900;letter-spacing:.17em;text-transform:uppercase;color:var(--lime);margin-bottom:12px}h1{font-size:clamp(39px,9vw,66px);letter-spacing:-.075em;line-height:.92;margin:0 0 16px;font-weight:1000;max-width:560px}h1 em{font-style:normal;color:var(--pink)}h2{font-size:clamp(23px,6vw,34px);letter-spacing:-.05em;line-height:1.05;margin:0 0 14px}h3{font-size:17px;letter-spacing:-.02em;margin:0 0 8px}p{line-height:1.55;color:var(--muted);margin:0 0 16px}.lead{font-size:16px;max-width:510px}.sticker{position:absolute;right:20px;top:24px;border:2px solid var(--pink);color:var(--pink);font-size:10px;font-weight:1000;letter-spacing:.08em;padding:8px 10px;border-radius:9px;transform:rotate(9deg)}.card{margin-top:14px;padding:22px;background:#191927eF;border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 12px 30px #0002}.screen{display:none}.screen.active{display:block}.field-label{display:block;color:#d4d1e7;font-size:12px;font-weight:850;letter-spacing:.04em;margin:0 0 7px}input,textarea{width:100%;background:#10101b;color:var(--ink);border:1px solid #41405b;border-radius:13px;padding:14px 15px;margin:0 0 15px;min-height:50px}input::placeholder,textarea::placeholder{color:#77758f}textarea{resize:vertical;min-height:112px;line-height:1.45}.row{display:flex;gap:10px;align-items:center}.row>*{min-width:0}.row .grow{flex:1}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:13px 17px;border-radius:13px;background:var(--lime);color:#181824;font-weight:950;width:100%}.btn.secondary{background:#2b2a40;color:var(--ink);border:1px solid #45435f}.btn.pink{background:var(--pink);color:#211522}.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}.btn:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.5)}.subtle{font-size:12px;color:var(--muted)}.howto{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.howto div{padding:12px 10px;border-radius:14px;border:1px solid var(--line);background:#171725}.howto b{display:block;color:var(--cyan);font-size:12px;margin-bottom:5px}.howto span{font-size:11px;line-height:1.4;color:var(--muted)}.roombar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:17px}.roomcode{font-size:21px;letter-spacing:.18em;font-weight:1000;color:var(--lime);font-variant-numeric:tabular-nums}.pill{display:inline-flex;gap:7px;align-items:center;padding:7px 10px;background:#29283d;border:1px solid #41405a;border-radius:99px;color:#d7d4e9;font-size:11px;font-weight:850}.kicker{font-size:11px;font-weight:950;letter-spacing:.16em;color:var(--pink);text-transform:uppercase;margin-bottom:9px}.status{padding:12px 14px;border-radius:12px;background:#222237;color:var(--muted);font-size:13px;line-height:1.5;margin-top:12px}.status.good{background:#243321;color:#d8ffb1}.status.bad{background:#3a222e;color:#ffd3e3}.playerlist,.scorelist{list-style:none;padding:0;margin:14px 0}.playerlist li,.scorelist li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;background:#11111c;border:1px solid #302f45;border-radius:13px;margin-bottom:8px}.person{display:flex;align-items:center;gap:10px;min-width:0}.avatar{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#313048;color:var(--cyan);font-weight:1000}.person-name{font-weight:850;overflow-wrap:anywhere}.meta{font-size:11px;color:var(--muted)}.tag{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:99px;padding:5px 7px;background:#2c2b41;color:var(--cyan)}.quote{padding:16px 17px;background:#10101b;border:1px solid #39384f;border-left:4px solid var(--cyan);border-radius:0 14px 14px 0;font-size:18px;line-height:1.45;font-weight:800;margin:15px 0;overflow-wrap:anywhere}.photo-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.photo-choice{display:flex;flex-direction:column;gap:9px;text-align:left;padding:10px;background:#10101b;border:2px solid #3c3a55;border-radius:16px;color:var(--ink);min-width:0}.photo-choice:hover{border-color:var(--lime)}.photo-choice.selected{border-color:var(--lime);box-shadow:0 0 0 2px #c8ff5a20}.photo-choice:disabled{cursor:default;opacity:.8}.photo-thumb{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;border-radius:10px;background:#2b2a40}.photo-choice-title{font-size:12px;line-height:1.35;font-weight:850}.photo-choice-cta{font-size:10px;color:var(--lime);font-weight:950;letter-spacing:.08em;text-transform:uppercase}.photo-display{display:block;width:100%;max-height:360px;aspect-ratio:4/5;object-fit:cover;border-radius:13px;background:#2b2a40;margin:12px 0}.photo-caption{font-size:15px;line-height:1.5;font-weight:700;overflow-wrap:anywhere;margin-top:9px}.vote-card{width:100%;text-align:left;padding:16px;margin:0 0 12px;background:#11111c;border:1px solid #45435d;color:var(--ink);border-radius:16px}.vote-card:hover{border-color:var(--lime);background:#1a1a29}.vote-card .context{font-size:17px;font-weight:900;line-height:1.35;overflow-wrap:anywhere}.vote-card .quote{font-size:14px;font-weight:650;margin:12px 0 0;padding:12px;border-left-width:3px}.vote-card .hint{font-size:10px;color:var(--muted);font-weight:900;letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}.score{color:var(--lime);font-size:15px;font-weight:1000;white-space:nowrap}.rank{color:var(--pink);font-size:13px;font-weight:1000}.divider{height:1px;background:var(--line);margin:16px 0}.hidden{display:none!important}.footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#77758f;font-size:11px;padding:17px 4px 0}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:10;background:#f6f0ff;color:#1b1825;padding:12px 16px;border-radius:14px;font-size:13px;font-weight:800;box-shadow:0 12px 40px #0007;max-width:calc(100% - 28px);text-align:center}@media(min-width:600px){.shell{padding-top:32px}.hero{padding:34px}.card{padding:26px}.two-col{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:start}.two-col .card{margin-top:0}}@media(max-width:390px){.howto{grid-template-columns:1fr}.howto div{display:flex;gap:10px;align-items:center}.howto b{margin:0;min-width:55px}.hero{padding:22px 18px}.card{padding:18px}.sticker{right:14px;top:18px}.connection{font-size:10px}}@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}</style>
 </head>
 <body>
-  <main class="shell">
-    <header class="topbar">
-      <div class="brand"><div class="logo" aria-hidden="true">!</div><div>INTERNET SUCKS<small>the context is cooked</small></div></div>
-      <div class="connection" title="Realtime database connection"><span id="connectionDot" class="dot"></span><span id="connectionLabel">Connecting</span></div>
-    </header>
+<main class="shell">
+<header class="topbar">
+<div class="brand"><div class="logo" aria-hidden="true">!</div><div>INTERNET SUCKS<small>the context is cooked</small></div></div>
+<div class="connection" title="Realtime database connection"><span id="connectionDot" class="dot"></span><span id="connectionLabel">Connecting</span></div>
+</header>
 
-    <section id="screen-lobby" class="screen active">
-      <div class="hero">
-        <div class="sticker">FRIENDSHIP TEST</div>
-        <div class="eyebrow">A multiplayer party game</div>
-        <h1>Take it out<br>of <em>context.</em></h1>
-        <p class="lead">Give your friends a perfectly normal answer. Then watch them make it look absolutely unhinged. The internet is a terrible place. Have fun.</p>
-        <div class="howto">
-          <div><b>01 / ANSWER</b><span>Respond to a weirdly specific question.</span></div>
-          <div><b>02 / REFRAME</b><span>Make someone else's answer sound suspicious.</span></div>
-          <div><b>03 / VOTE</b><span>Pick the funniest context. Collect points.</span></div>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Get in the room.</h2>
-        <p>Everyone uses their own phone. One person hosts; send the room code to the group chat.</p>
-        <label class="field-label" for="playerName">YOUR NICKNAME</label>
-        <input id="playerName" maxlength="18" autocomplete="nickname" placeholder="e.g. keyboard warrior">
-        <label class="field-label" for="joinCode">ROOM CODE <span class="subtle">(leave blank to host)</span></label>
-        <input id="joinCode" maxlength="5" autocapitalize="characters" autocomplete="off" placeholder="5 LETTERS / NUMBERS" style="text-transform:uppercase;letter-spacing:.16em">
-        <button id="enterRoom" class="btn">Create a room <span aria-hidden="true">↗</span></button>
-        <div id="lobbyError" class="status bad hidden" role="alert"></div>
-        <p class="subtle" style="margin-top:14px;margin-bottom:0">Best with 3–8 friends · 4 rounds · no app download</p>
-      </div>
-    </section>
+<section id="screen-lobby" class="screen active">
+<div class="hero">
+<div class="sticker">FRIENDSHIP TEST</div>
+<div class="eyebrow">A multiplayer party game</div>
+<h1>Take it out<br>of <em>context.</em></h1>
+<p class="lead">Give your friends a perfectly normal answer. Then watch them make it look absolutely unhinged. The internet is a terrible place. Have fun.</p>
+<div class="howto">
+<div><b>01 / ANSWER</b><span>Respond to a weirdly specific question.</span></div>
+<div><b>02 / REFRAME</b><span>Make someone else's answer sound suspicious.</span></div>
+<div><b>03 / VOTE</b><span>Pick the funniest context. Collect points.</span></div>
+</div>
+</div>
+<div class="card">
+<h2>Get in the room.</h2>
+<p>Everyone uses their own phone. One person hosts; send the room code to the group chat.</p>
+<label class="field-label" for="playerName">YOUR NICKNAME</label>
+<input id="playerName" maxlength="18" autocomplete="nickname" placeholder="e.g. keyboard warrior">
+<label class="field-label" for="joinCode">ROOM CODE <span class="subtle">(leave blank to host)</span></label>
+<input id="joinCode" maxlength="5" autocapitalize="characters" autocomplete="off" placeholder="5 LETTERS / NUMBERS" style="text-transform:uppercase;letter-spacing:.16em">
+<button id="enterRoom" class="btn">Create a room <span aria-hidden="true">↗</span></button>
+<div id="lobbyError" class="status bad hidden" role="alert"></div>
+<p class="subtle" style="margin-top:14px;margin-bottom:0">Best with 3–8 friends · 4 rounds · no app download</p>
+</div>
+</section>
 
-    <section id="screen-room" class="screen">
-      <div class="card">
-        <div class="roombar">
-          <div><div class="kicker">Private room</div><div class="roomcode" id="roomCodeDisplay">-----</div></div>
-          <button id="copyRoomCode" class="btn secondary" style="width:auto;min-width:108px">Copy code</button>
-        </div>
-        <h2>Who's online?</h2>
-        <p>Send the code to your friends. The host can start when at least 3 players have joined.</p>
-        <ul id="waitingPlayers" class="playerlist"></ul>
-        <div id="hostNotice" class="status">Waiting for the host…</div>
-        <button id="startGame" class="btn hidden">Start the chaos ↗</button>
-        <button id="backToGame" class="btn secondary hidden" style="margin-top:10px">Return to game</button>
-        <div id="roomError" class="status bad hidden" role="alert"></div>
-      </div>
-    </section>
+<section id="screen-room" class="screen">
+<div class="card">
+<div class="roombar">
+<div><div class="kicker">Private room</div><div class="roomcode" id="roomCodeDisplay">-----</div></div>
+<button id="copyRoomCode" class="btn secondary" style="width:auto;min-width:108px">Copy code</button>
+</div>
+<h2>Who's online?</h2>
+<p>Send the code to your friends. The host can start when at least 3 players have joined.</p>
+<ul id="waitingPlayers" class="playerlist"></ul>
+<div id="hostNotice" class="status">Waiting for the host…</div>
+<button id="startGame" class="btn hidden">Start the chaos ↗</button>
+<button id="backToGame" class="btn secondary hidden" style="margin-top:10px">Return to game</button>
+<div id="roomError" class="status bad hidden" role="alert"></div>
+</div>
+</section>
 
-    <section id="screen-answering" class="screen">
-      <div class="card">
-        <div class="roombar"><span class="pill" id="roundPill">ROUND 1 / 5</span><span class="pill">01 · ANSWER</span></div>
-        <div class="kicker" id="answerKicker">ROUND 1 · YOUR POST</div>
-        <h2 id="promptTitle">Loading the theme…</h2>
-        <p id="promptDescription">Write something that fits this part of the internet. The next player will take it wildly out of context.</p>
-        <div id="answerTextFields">
-          <label class="field-label" for="answerInput">YOUR CONTRIBUTION</label>
-          <textarea id="answerInput" maxlength="240" placeholder="Type something your future self may regret…"></textarea>
-          <button id="submitAnswer" class="btn">Lock in answer</button>
-        </div>
-        <div id="photoPicker" class="photo-picker hidden" aria-label="Choose one photo"></div>
-        <div id="answerStatus" class="status hidden" aria-live="polite"></div>
-      </div>
-    </section>
+<section id="screen-answering" class="screen">
+<div class="card">
+<div class="roombar"><span class="pill" id="roundPill">ROUND 1 / 5</span><span class="pill">01 · ANSWER</span></div>
+<div class="kicker" id="answerKicker">ROUND 1 · YOUR POST</div>
+<h2 id="promptTitle">Loading the theme…</h2>
+<p id="promptDescription">Write something that fits this part of the internet. The next player will take it wildly out of context.</p>
+<div id="answerTextFields">
+<label class="field-label" for="answerInput">YOUR CONTRIBUTION</label>
+<textarea id="answerInput" maxlength="240" placeholder="Type something your future self may regret…"></textarea>
+<button id="submitAnswer" class="btn">Lock in answer</button>
+</div>
+<div id="photoPicker" class="photo-picker hidden" aria-label="Choose one photo"></div>
+<div id="answerStatus" class="status hidden" aria-live="polite"></div>
+</div>
+</section>
 
-    <section id="screen-rewriting" class="screen">
-      <div class="card">
-        <div class="roombar"><span class="pill" id="rewriteRoundPill">ROUND 1 / 5</span><span class="pill">02 · REFRAME</span></div>
-        <div class="kicker" id="rewriteKicker">THE TWISTER'S PROMPT</div>
-        <h2 id="rewriteTitle">Make this look suspicious.</h2>
-        <p id="rewriteDescription">Someone in the room made this post. Add the context that makes it hilariously worse.</p>
-        <div class="quote" id="answerToReframe"></div>
-        <label class="field-label" id="rewriteLabel" for="rewriteInput">THE INTERNET'S VERSION</label>
-        <textarea id="rewriteInput" maxlength="240" placeholder="Breaking: local person admits…"></textarea>
-        <button id="submitRewrite" class="btn pink">Publish your slander</button>
-        <div id="rewriteStatus" class="status hidden" aria-live="polite"></div>
-      </div>
-    </section>
+<section id="screen-rewriting" class="screen">
+<div class="card">
+<div class="roombar"><span class="pill" id="rewriteRoundPill">ROUND 1 / 5</span><span class="pill">02 · REFRAME</span></div>
+<div class="kicker" id="rewriteKicker">THE TWISTER'S PROMPT</div>
+<h2 id="rewriteTitle">Make this look suspicious.</h2>
+<p id="rewriteDescription">Someone in the room made this post. Add the context that makes it hilariously worse.</p>
+<div class="quote" id="answerToReframe"></div>
+<label class="field-label" id="rewriteLabel" for="rewriteInput">THE INTERNET'S VERSION</label>
+<textarea id="rewriteInput" maxlength="240" placeholder="Breaking: local person admits…"></textarea>
+<button id="submitRewrite" class="btn pink">Publish your slander</button>
+<div id="rewriteStatus" class="status hidden" aria-live="polite"></div>
+</div>
+</section>
 
-    <section id="screen-voting" class="screen">
-      <div class="card">
-        <div class="roombar"><span class="pill" id="voteRoundPill">ROUND 1 / 5</span><span class="pill">03 · VOTE</span></div>
-        <div class="kicker">The group chat is the jury</div>
-        <h2>Which reframe wins?</h2>
-        <p>Tap the funniest entry. You can't vote for your own post, and votes stay hidden until everyone has chosen.</p>
-        <div id="votingCards"></div>
-        <div id="voteStatus" class="status hidden" aria-live="polite"></div>
-      </div>
-    </section>
+<section id="screen-voting" class="screen">
+<div class="card">
+<div class="roombar"><span class="pill" id="voteRoundPill">ROUND 1 / 5</span><span class="pill">03 · VOTE</span></div>
+<div class="kicker">The group chat is the jury</div>
+<h2>Which reframe wins?</h2>
+<p>Tap the funniest entry. You can't vote for your own post, and votes stay hidden until everyone has chosen.</p>
+<div id="votingCards"></div>
+<div id="voteStatus" class="status hidden" aria-live="polite"></div>
+</div>
+</section>
 
-    <section id="screen-results" class="screen">
-      <div class="card">
-        <div class="roombar"><span class="pill" id="resultRoundPill">ROUND 1 / 5</span><span class="pill">THE REVEAL</span></div>
-        <div class="kicker">Receipts were kept</div>
-        <h2>Who cooked?</h2>
-        <p>The votes are in. Here's how the room judged everyone's context crimes.</p>
-        <div id="roundReveal"></div>
-        <div class="divider"></div>
-        <h3>Leaderboard</h3>
-        <ul id="scoreList" class="scorelist"></ul>
-        <button id="nextRound" class="btn">Next round ↗</button>
-      </div>
-    </section>
+<section id="screen-results" class="screen">
+<div class="card">
+<div class="roombar"><span class="pill" id="resultRoundPill">ROUND 1 / 5</span><span class="pill">THE REVEAL</span></div>
+<div class="kicker">Receipts were kept</div>
+<h2>Who cooked?</h2>
+<p>The votes are in. Here's how the room judged everyone's context crimes.</p>
+<div id="roundReveal"></div>
+<div class="divider"></div>
+<h3>Leaderboard</h3>
+<ul id="scoreList" class="scorelist"></ul>
+<button id="nextRound" class="btn">Next round ↗</button>
+</div>
+</section>
 
-    <section id="screen-finished" class="screen">
-      <div class="hero">
-        <div class="eyebrow">That's a wrap</div>
-        <h1>The internet<br><em>survived.</em></h1>
-        <p class="lead">Your friendships may not have. Final standings are below.</p>
-      </div>
-      <div class="card">
-        <div id="winnerPanel"></div>
-        <ul id="finalScoreList" class="scorelist"></ul>
-        <button id="playAgain" class="btn">Run it back ↻</button>
-        <p class="subtle" id="playAgainNote" style="margin-top:12px;margin-bottom:0">Only the host can start a rematch.</p>
-      </div>
-    </section>
+<section id="screen-finished" class="screen">
+<div class="hero">
+<div class="eyebrow">That's a wrap</div>
+<h1>The internet<br><em>survived.</em></h1>
+<p class="lead">Your friendships may not have. Final standings are below.</p>
+</div>
+<div class="card">
+<div id="winnerPanel"></div>
+<ul id="finalScoreList" class="scorelist"></ul>
+<button id="playAgain" class="btn">Run it back ↻</button>
+<p class="subtle" id="playAgainNote" style="margin-top:12px;margin-bottom:0">Only the host can start a rematch.</p>
+</div>
+</section>
 
-    <footer class="footer"><span>INTERNET SUCKS · made for the group chat</span><span>Be funny. Be kind-ish.</span></footer>
-  </main>
-  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<footer class="footer"><span>INTERNET SUCKS · made for the group chat</span><span>Be funny. Be kind-ish.</span></footer>
+</main>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getDatabase, ref, get, set, update, onValue, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, get, set, update, onValue, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    // This is the web app configuration already associated with this project.
-    const firebaseConfig = {
-      apiKey: "AIzaSyDVE-tP7ZvQjBGWXwwRHbvXMw-uWsocBG8",
-      authDomain: "internet-sucks.firebaseapp.com",
-      databaseURL: "https://internet-sucks-default-rtdb.firebaseio.com",
-      projectId: "internet-sucks",
-      storageBucket: "internet-sucks.firebasestorage.app",
-      messagingSenderId: "876270281291",
-      appId: "1:876270281291:web:ab8a045b324b9e963da3ce",
-      measurementId: "G-QDFR9P60PF"
-    };
+// This is the web app configuration already associated with this project.
+const firebaseConfig = {
+apiKey: "AIzaSyDVE-tP7ZvQjBGWXwwRHbvXMw-uWsocBG8",
+authDomain: "internet-sucks.firebaseapp.com",
+databaseURL: "https://internet-sucks-default-rtdb.firebaseio.com",
+projectId: "internet-sucks",
+storageBucket: "internet-sucks.firebasestorage.app",
+messagingSenderId: "876270281291",
+appId: "1:876270281291:web:ab8a045b324b9e963da3ce",
+measurementId: "G-QDFR9P60PF"
+};
 
-    const THEMES = [
-      {id:"video-site",name:"Video Site",role:"Top comment under a video",frame:"What is the title of the video they commented on?"},
-      {id:"social-media",name:"Social Media",role:"A public post",frame:"What hashtag trend did they attach to this post?"},
-      {id:"social-network",name:"Social Network",role:"A link shared with a comment",frame:"What article headline did they share?"},
-      {id:"web-forum",name:"Web Forum",role:"An answer in a Q&A thread",frame:"What question are they replying to?"},
-      {id:"job-network",name:"Job Network",role:"Why they're qualified",frame:"What weird job skill are they endorsing?"},
-      {id:"store",name:"Store",role:"A verified customer review",frame:"What product are they reviewing?"},
-      {id:"crowdfunding",name:"Crowdfunding",role:"A campaign creator's pitch",frame:"What is the title of their campaign?"},
-      {id:"check-in-site",name:"Check-in Site",role:"A local review",frame:"What business or location did they check into?"},
-      {id:"news-site",name:"News Site",role:"A reader comment on an article",frame:"What breaking news headline are they reacting to?"},
-      {id:"photo-sharing",name:"Photo Sharing Site",role:"A photo on their personal feed",frame:"Write the caption they put under this photo."}
-    ];
-    const THEME_BY_ID = Object.fromEntries(THEMES.map(theme => [theme.id, theme]));
-    const PHOTO_LIBRARY = [
-      {id:"cat-window",label:"A cat by a window",url:"https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=900&q=82"},
-      {id:"cat-glasses",label:"A cat with main-character energy",url:"https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&w=900&q=82"},
-      {id:"golden-dog",label:"A golden dog posing for the camera",url:"https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=900&q=82"},
-      {id:"dog-friend",label:"A very good dog",url:"https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=900&q=82"},
-      {id:"concert-crowd",label:"A crowd at a concert",url:"https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=82"},
-      {id:"mountain-trip",label:"A mountain getaway",url:"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"},
-      {id:"street-style",label:"A street-style outfit",url:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=82"},
-      {id:"desk-setup",label:"A very tidy desk",url:"https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=82"},
-      {id:"fancy-dinner",label:"A fancy dinner",url:"https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=82"},
-      {id:"coffee-vibe",label:"Coffee and a life choice",url:"https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82"},
-      {id:"beach-day",label:"A beach day",url:"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=82"},
-      {id:"birthday-party",label:"A birthday party",url:"https://images.unsplash.com/photo-1530103862676-de8c9debad1?auto=format&fit=crop&w=900&q=82"}
-    ];
-    const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    const MAX_PLAYERS = 12;
-    const TOTAL_ROUNDS = 4;
+const THEMES = [
+{id:"video-site",name:"Video Site",role:"Top comment under a video",frame:"What is the title of the video they commented on?"},
+{id:"social-media",name:"Social Media",role:"A public post",frame:"What hashtag trend did they attach to this post?"},
+{id:"social-network",name:"Social Network",role:"A link shared with a comment",frame:"What article headline did they share?"},
+{id:"web-forum",name:"Web Forum",role:"An answer in a Q&A thread",frame:"What question are they replying to?"},
+{id:"job-network",name:"Job Network",role:"Why they're qualified",frame:"What weird job skill are they endorsing?"},
+{id:"store",name:"Store",role:"A verified customer review",frame:"What product are they reviewing?"},
+{id:"crowdfunding",name:"Crowdfunding",role:"A campaign creator's pitch",frame:"What is the title of their campaign?"},
+{id:"check-in-site",name:"Check-in Site",role:"A local review",frame:"What business or location did they check into?"},
+{id:"news-site",name:"News Site",role:"A reader comment on an article",frame:"What breaking news headline are they reacting to?"},
+{id:"photo-sharing",name:"Photo Sharing Site",role:"A photo on their personal feed",frame:"Write the caption they put under this photo."}
+];
+const THEME_BY_ID = Object.fromEntries(THEMES.map(theme => [theme.id, theme]));
+const PHOTO_LIBRARY = [
+{id:"cat-window",label:"A cat by a window",url:"https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=900&q=82"},
+{id:"cat-glasses",label:"A cat with main-character energy",url:"https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&w=900&q=82"},
+{id:"golden-dog",label:"A golden dog posing for the camera",url:"https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=900&q=82"},
+{id:"dog-friend",label:"A very good dog",url:"https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=900&q=82"},
+{id:"concert-crowd",label:"A crowd at a concert",url:"https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=82"},
+{id:"mountain-trip",label:"A mountain getaway",url:"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"},
+{id:"street-style",label:"A street-style outfit",url:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=82"},
+{id:"desk-setup",label:"A very tidy desk",url:"https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=82"},
+{id:"fancy-dinner",label:"A fancy dinner",url:"https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=82"},
+{id:"coffee-vibe",label:"Coffee and a life choice",url:"https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82"},
+{id:"beach-day",label:"A beach day",url:"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=82"},
+{id:"birthday-party",label:"A birthday party",url:"https://images.unsplash.com/photo-1530103862676-de8c9debad1?auto=format&fit=crop&w=900&q=82"}
+];
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const MAX_PLAYERS = 12;
+const TOTAL_ROUNDS = 4;
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-    let uid = null;
-    let currentCode = null;
-    let currentRoomRef = null;
-    let roomListener = null;
-    let currentRoom = null;
-    let lastPhase = "";
-    let lastVoteSignature = "";
-    let busy = false;
-    let toastTimer = null;
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+let uid = null;
+let currentCode = null;
+let currentRoomRef = null;
+let roomListener = null;
+let currentRoom = null;
+let lastPhase = "";
+let lastVoteSignature = "";
+let busy = false;
+let toastTimer = null;
 
-    const $ = (id) => document.getElementById(id);
-    const show = (id) => $(id).classList.remove("hidden");
-    const hide = (id) => $(id).classList.add("hidden");
-    const setConnection = (state, label) => {
-      $("connectionDot").className = "dot " + state;
-      $("connectionLabel").textContent = label;
-    };
-    function say(message) {
-      $("toast").textContent = message;
-      show("toast");
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => hide("toast"), 2600);
-    }
-    function showError(id, message) {
-      $(id).textContent = message;
-      show(id);
-    }
-    function clearError(id) { hide(id); $(id).textContent = ""; }
-    function showScreen(name) {
-      document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
-      $("screen-" + name).classList.add("active");
-    }
-    function newCode() {
-      let out = "";
-      for (let i = 0; i < 5; i++) out += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
-      return out;
-    }
-    function safeText(el, value) { el.textContent = value == null ? "" : String(value); }
-    function shuffled(items) {
-      const out = [...items];
-      for (let i = out.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [out[i], out[j]] = [out[j], out[i]];
-      }
-      return out;
-    }
-    function themeFor(room) { return THEME_BY_ID[(room && room.themeId) || "video-site"]; }
-    function answerSubmitted(room, id) {
-      const answer = room && room.answers && room.answers[id];
-      return Boolean(answer && (room.themeId === "photo-sharing" ? answer.photoId : answer.text));
-    }
-    function photoFor(id) { return PHOTO_LIBRARY.find(photo => photo.id === id) || PHOTO_LIBRARY[0]; }
-    function buildPhotoOptions(ids) {
-      const options = {};
-      ids.forEach(id => { options[id] = shuffled(PHOTO_LIBRARY).slice(0, 2).map(photo => photo.id); });
-      return options;
-    }
-    function appendPhoto(container, id, className = "photo-display") {
-      const photo = photoFor(id);
-      const img = document.createElement("img");
-      img.className = className; img.src = photo.url; img.alt = photo.label; img.loading = "lazy";
-      img.addEventListener("error", () => { img.alt = "Photo unavailable"; img.style.display = "none"; }, { once: true });
-      container.append(img);
-      return img;
-    }
-    function playerNameFor(room, id) {
-      return (room.players && room.players[id] && room.players[id].name) || "Anonymous legend";
-    }
-    function phaseName(phase) {
-      return ({lobby:"Lobby", answering:"Answering", rewriting:"Reframing", voting:"Voting", results:"Results", finished:"Finished"})[phase] || "In game";
-    }
-    function participantIds(room) {
-      return Array.isArray(room.participants) ? room.participants : Object.keys(room.players || {});
-    }
-    function addPlayerRow(list, name, subtitle, trailing, index) {
-      const li = document.createElement("li");
-      const person = document.createElement("div"); person.className = "person";
-      const avatar = document.createElement("span"); avatar.className = "avatar"; avatar.textContent = (name || "?").slice(0,1).toUpperCase();
-      const info = document.createElement("div");
-      const nm = document.createElement("div"); nm.className = "person-name"; nm.textContent = name;
-      const meta = document.createElement("div"); meta.className = "meta"; meta.textContent = subtitle || "";
-      info.append(nm, meta); person.append(avatar, info); li.append(person);
-      if (trailing) { const end = document.createElement("span"); end.className = "tag"; end.textContent = trailing; li.append(end); }
-      list.append(li);
-    }
-    function makeVoteCard(authorId, room) {
-      const answers = room.answers || {};
-      const twists = room.twists || {};
-      const targetId = (room.assignments || {})[authorId];
-      const answer = answers[targetId] || {};
-      const card = document.createElement("button");
-      card.type = "button";
-      card.className = "vote-card";
-      const hint = document.createElement("div");
-      hint.className = "hint";
-      hint.textContent = themeFor(room).name.toUpperCase();
-      const content = document.createElement("div");
-      content.className = room.themeId === "photo-sharing" ? "photo-caption" : "context";
-      content.textContent = (twists[authorId] && twists[authorId].text) || "";
-      if (room.themeId === "photo-sharing") {
-        card.append(hint);
-        appendPhoto(card, answer.photoId);
-        card.append(content);
-      } else {
-        const quote = document.createElement("div");
-        quote.className = "quote";
-        quote.textContent = "“" + (answer.text || "(no answer)") + "”";
-        card.append(hint, content, quote);
-      }
-      card.addEventListener("click", () => castVote(authorId));
-      return card;
-    }
-    function renderLobby(room) {
-      $("roomCodeDisplay").textContent = currentCode || "-----";
-      const players = room.players || {};
-      const ids = Object.keys(players);
-      $("waitingPlayers").replaceChildren();
-      ids.sort((a,b) => (players[a].joinedAt || 0) - (players[b].joinedAt || 0));
-      ids.forEach((id, i) => {
-        const isHost = id === room.hostId;
-        addPlayerRow($("waitingPlayers"), players[id].name || "Player", id === uid ? "That's you" : (players[id].online === false ? "Reconnecting…" : "Ready to play"), isHost ? "HOST" : "PLAYER", i);
-      });
-      const isHost = room.hostId === uid;
-      $("hostNotice").textContent = isHost
-        ? (ids.length < 3 ? "You're hosting. Invite at least " + (3 - ids.length) + " more friend(s) to start." : "You're hosting. Everyone's here — start whenever.")
-        : "The host will start the game once at least 3 players have joined.";
-      $("startGame").classList.toggle("hidden", !isHost);
-      $("startGame").disabled = ids.length < 3 || busy;
-      $("startGame").textContent = ids.length < 3 ? "Waiting for 3 players…" : "Start the chaos ↗";
-    }
-    function renderAnswering(room) {
-      const theme = themeFor(room);
-      $("roundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
-      safeText($("answerKicker"), "ROUND " + room.round + " · " + theme.name.toUpperCase());
-      safeText($("promptTitle"), theme.role);
-      safeText($("promptDescription"), room.themeId === "photo-sharing"
-        ? "Pick one of these two photos for your post. Someone else will write the caption."
-        : "Write something that fits this part of the internet. The next player will invent the context.");
-      const answers = room.answers || {};
-      const answer = answers[uid] || null;
-      const submitted = answerSubmitted(room, uid);
-      const photoRound = room.themeId === "photo-sharing";
-      $("answerTextFields").classList.toggle("hidden", photoRound);
-      $("submitAnswer").classList.toggle("hidden", photoRound);
-      $("photoPicker").classList.toggle("hidden", !photoRound);
-      $("answerInput").placeholder = theme.placeholder || "Write your post…";
-      $("answerInput").disabled = submitted || busy;
-      $("submitAnswer").disabled = submitted || busy;
-      $("submitAnswer").textContent = submitted ? "Answer locked ✓" : "Lock in answer";
-      if (photoRound) {
-        const picker = $("photoPicker");
-        picker.replaceChildren();
-        const options = (room.photoOptions && room.photoOptions[uid]) || PHOTO_LIBRARY.slice(0, 2).map(photo => photo.id);
-        options.forEach((photoId) => {
-          const photo = photoFor(photoId);
-          const choice = document.createElement("button");
-          choice.type = "button";
-          choice.className = "photo-choice" + (answer && answer.photoId === photoId ? " selected" : "");
-          choice.disabled = submitted || busy;
-          choice.setAttribute("aria-label", "Choose photo: " + photo.label);
-          appendPhoto(choice, photoId, "photo-thumb");
-          const label = document.createElement("span"); label.className = "photo-choice-title"; label.textContent = photo.label;
-          const cta = document.createElement("span"); cta.className = "photo-choice-cta";
-          cta.textContent = answer && answer.photoId === photoId ? "Selected ✓" : (submitted ? "Not selected" : "Use this photo");
-          choice.append(label, cta);
-          choice.addEventListener("click", () => submitPhotoChoice(photoId));
-          picker.append(choice);
-        });
-      }
-      $("answerStatus").classList.toggle("hidden", !submitted);
-      if (submitted) $("answerStatus").textContent = photoRound
-        ? "Photo selected. Waiting for everyone else to choose…"
-        : "Answer locked. Waiting for everyone else to answer…";
-    }
-    function renderRewriting(room) {
-      $("rewriteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
-      const theme = themeFor(room);
-      safeText($("rewriteTitle"), theme.frame);
-      safeText($("rewriteKicker"), "ROUND " + room.round + " · " + theme.name.toUpperCase());
-      safeText($("rewriteLabel"), room.themeId === "photo-sharing" ? "THE POST CAPTION" : "THE INTERNET'S VERSION");
-      $("rewriteInput").placeholder = theme.placeholder || "Add your context…";
-      const targetId = (room.assignments || {})[uid];
-      const answer = targetId && room.answers && room.answers[targetId];
-      $("answerToReframe").replaceChildren();
-      if (answer && room.themeId === "photo-sharing") appendPhoto($("answerToReframe"), answer.photoId);
-      else safeText($("answerToReframe"), answer ? "“" + (answer.text || "") + "”" : "Your post is being assigned…");
-      const submitted = Boolean((room.twists || {})[uid]);
-      $("rewriteInput").disabled = submitted || busy;
-      $("submitRewrite").disabled = submitted || busy || !answer;
-      $("submitRewrite").textContent = submitted ? "Post published ✓" : "Publish your slander";
-      $("rewriteStatus").classList.toggle("hidden", !submitted);
-      if (submitted) $("rewriteStatus").textContent = "Posted. The jury is assembling…";
-    }
-    function renderVoting(room) {
-      $("voteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
-      const ownVote = (room.votes || {})[uid];
-      const signature = JSON.stringify([room.twists || {}, room.answers || {}, ownVote || null]);
-      if (signature !== lastVoteSignature) {
-        lastVoteSignature = signature;
-        const container = $("votingCards");
-        container.replaceChildren();
-        if (ownVote) {
-          const status = document.createElement("div"); status.className = "status good"; status.textContent = "Vote locked. Waiting for the rest of the jury…"; container.append(status);
-        } else {
-          Object.keys(room.twists || {}).filter((authorId) => authorId !== uid).sort().forEach((authorId) => container.append(makeVoteCard(authorId, room)));
-          if (container.childElementCount === 0) {
-            const status = document.createElement("div"); status.className = "status"; status.textContent = "Waiting for more entries…"; container.append(status);
-          }
-        }
-      }
-      $("voteStatus").classList.add("hidden");
-    }
-    function renderResults(room) {
-      $("resultRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
-      const reveal = $("roundReveal"); reveal.replaceChildren();
-      const voteMap = room.votes || {};
-      const assignments = room.assignments || {};
-      const answers = room.answers || {};
-      const twists = room.twists || {};
-      Object.keys(twists).sort((a,b) => {
-        const va = Object.values(voteMap).filter(v => v === a).length;
-        const vb = Object.values(voteMap).filter(v => v === b).length;
-        return vb - va;
-      }).forEach((authorId) => {
-        const wrap = document.createElement("div"); wrap.className = "vote-card"; wrap.style.cursor = "default";
-        const title = document.createElement("div"); title.className = "context"; title.textContent = twists[authorId].text;
-        const quote = document.createElement("div"); quote.className = "quote"; quote.textContent = "“" + ((answers[assignments[authorId]] && answers[assignments[authorId]].text) || "") + "”";
-        const votes = Object.values(voteMap).filter(v => v === authorId).length;
-        const credits = document.createElement("div"); credits.className = "meta"; credits.style.marginTop = "10px";
-        credits.textContent = "Reframed by " + playerNameFor(room, authorId) + " · Original answer by " + playerNameFor(room, assignments[authorId]) + " · " + votes + " vote(s)";
-        wrap.append(title, quote, credits); reveal.append(wrap);
-      });
-      const players = room.players || {};
-      const scores = room.scores || {};
-      const ranked = Object.keys(players).sort((a,b) => (scores[b] || 0) - (scores[a] || 0));
-      $("scoreList").replaceChildren();
-      ranked.forEach((id, i) => addPlayerRow($("scoreList"), players[id].name || "Player", (i === 0 ? "Top of the chaos" : "Total score"), (scores[id] || 0) + " pts", i));
-      $("nextRound").textContent = Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS) ? "Reveal final standings ↗" : "Next round ↗";
-      $("nextRound").disabled = room.hostId !== uid || busy;
-      $("nextRound").classList.toggle("hidden", room.hostId !== uid);
-    }
-    function renderFinished(room) {
-      const players = room.players || {};
-      const scores = room.scores || {};
-      const ranked = Object.keys(players).sort((a,b) => (scores[b] || 0) - (scores[a] || 0));
-      $("finalScoreList").replaceChildren();
-      ranked.forEach((id, i) => addPlayerRow($("finalScoreList"), players[id].name || "Player", i === 0 ? "👑 chaos champion" : "Final score", (scores[id] || 0) + " pts", i));
-      $("winnerPanel").replaceChildren();
-      const title = document.createElement("h2");
-      title.textContent = ranked.length ? "👑 " + playerNameFor(room, ranked[0]) + " wins." : "Nobody wins. Very on brand.";
-      $("winnerPanel").append(title);
-      $("playAgain").classList.toggle("hidden", room.hostId !== uid);
-      $("playAgainNote").textContent = room.hostId === uid ? "A rematch resets everyone's score." : "Only the host can start a rematch.";
-    }
-    function renderRoom() {
-      const room = currentRoom;
-      if (!room) return;
-      setConnection("online", "Live");
-      $("roomCodeDisplay").textContent = currentCode || "-----";
-      const phase = room.phase || "lobby";
-      if (phase !== lastPhase) {
-        lastPhase = phase;
-        if (phase === "lobby") showScreen("room");
-        else showScreen(phase);
-        if (phase === "answering") { $("answerInput").value = ""; }
-        if (phase === "rewriting") { $("rewriteInput").value = ""; lastVoteSignature = ""; }
-        if (phase === "voting") lastVoteSignature = "";
-      }
-      $("roundPill").textContent = "ROUND " + (room.round || 1) + " / " + (room.maxRounds || TOTAL_ROUNDS);
-      if (phase === "lobby") renderLobby(room);
-      if (phase === "answering") renderAnswering(room);
-      if (phase === "rewriting") renderRewriting(room);
-      if (phase === "voting") renderVoting(room);
-      if (phase === "results") renderResults(room);
-      if (phase === "finished") renderFinished(room);
-      maybeAdvance();
-    }
-    async function maybeAdvance() {
-      if (!currentRoomRef || !uid || !currentRoom || busy) return;
-      const current = currentRoom;
-      if (current.hostId !== uid) return;
-      const participants = participantIds(current);
-      if (!participants.length) return;
-      let shouldTry = false;
-      if (current.phase === "answering") shouldTry = participants.every(id => answerSubmitted(current, id));
-      if (current.phase === "rewriting") shouldTry = participants.every(id => current.twists && current.twists[id] && current.twists[id].text);
-      if (current.phase === "voting") shouldTry = participants.every(id => current.votes && current.votes[id]);
-      if (!shouldTry) return;
-      try {
-        await runTransaction(currentRoomRef, (room) => {
-          if (!room || !Array.isArray(room.participants)) return;
-          const ids = room.participants;
-          if (room.phase === "answering" && ids.every(id => answerSubmitted(room, id))) {
-            const assignments = {};
-            ids.forEach((id, i) => { assignments[id] = ids[(i + 1) % ids.length]; });
-            room.phase = "rewriting";
-            room.assignments = assignments;
-            room.twists = {};
-            room.votes = {};
-            return room;
-          }
-          if (room.phase === "rewriting" && ids.every(id => room.twists && room.twists[id] && room.twists[id].text)) {
-            room.phase = "voting";
-            room.votes = {};
-            return room;
-          }
-          if (room.phase === "voting" && ids.every(id => room.votes && room.votes[id])) {
-            const tally = {};
-            ids.forEach(id => { tally[id] = 0; });
-            Object.values(room.votes).forEach(target => { if (Object.prototype.hasOwnProperty.call(tally, target)) tally[target] += 1; });
-            if (!room.scores) room.scores = {};
-            Object.keys(tally).forEach(id => {
-              room.scores[id] = (room.scores[id] || 0) + tally[id] * 100;
-            });
-            room.phase = "results";
-            room.voteTally = tally;
-            return room;
-          }
-          return;
-        }, { applyLocally: false });
-      } catch (error) {
-        console.warn("Could not advance game phase", error);
-      }
-    }
-    function attachRoom(code) {
-      if (roomListener) roomListener();
-      currentCode = code;
-      currentRoomRef = ref(db, "rooms/" + code);
-      localStorage.setItem("is_room_code", code);
-      $("roomCodeDisplay").textContent = code;
-      roomListener = onValue(currentRoomRef, (snapshot) => {
-        if (!snapshot.exists()) {
-          say("This room no longer exists.");
-          returnToLobby();
-          return;
-        }
-        currentRoom = snapshot.val();
-        renderRoom();
-      }, (error) => {
-        setConnection("offline", "Access denied");
-        say("Database access denied. Check the Firebase setup steps in the project README.");
-        console.error(error);
-      });
-      setConnection("online", "Live");
-      onDisconnect(ref(db, "rooms/" + code + "/players/" + uid + "/online")).set(false).catch(() => {});
-    }
-    async function createRoom(name) {
-      let code = null;
-      for (let i = 0; i < 6; i++) {
-        const candidate = newCode();
-        const candidateRef = ref(db, "rooms/" + candidate);
-        const result = await runTransaction(candidateRef, (room) => {
-          if (room) return;
-          const players = {};
-          players[uid] = { name, joinedAt: Date.now(), online: true };
-          return {
-            hostId: uid, phase: "lobby", round: 1, maxRounds: TOTAL_ROUNDS,
-            createdAt: Date.now(), players, scores: { [uid]: 0 }, participants: null,
-            prompt: null, answers: {}, assignments: {}, twists: {}, votes: {}
-          };
-        }, { applyLocally: false });
-        if (result.committed) { code = candidate; break; }
-      }
-      if (!code) throw new Error("Couldn't find a free room code. Try again.");
-      localStorage.setItem("is_player_name", name);
-      attachRoom(code);
-      return code;
-    }
-    async function joinRoom(code, name) {
-      const phaseSnapshot = await get(ref(db, "rooms/" + code + "/phase"));
-      if (!phaseSnapshot.exists()) throw new Error("Room not found. Check the code and try again.");
-      const phase = phaseSnapshot.val();
-      const playerRef = ref(db, "rooms/" + code + "/players/" + uid);
-      const existingSnapshot = await get(playerRef);
-      if (phase !== "lobby" && !existingSnapshot.exists()) {
-        throw new Error("This game has already started. Ask the host for a new room.");
-      }
-      const playersSnapshot = await get(ref(db, "rooms/" + code + "/players"));
-      const players = playersSnapshot.val() || {};
-      if (!existingSnapshot.exists() && Object.keys(players).length >= MAX_PLAYERS) {
-        throw new Error("This room is full. Ask the host to start another room.");
-      }
-      const old = existingSnapshot.val() || { joinedAt: Date.now() };
-      await set(playerRef, { ...old, name, online: true, joinedAt: old.joinedAt || Date.now() });
-      localStorage.setItem("is_player_name", name);
-      attachRoom(code);
-      return code;
-    }
-    async function enterRoom() {
-      if (busy || !uid) return;
-      const name = $("playerName").value.trim().replace(/\s+/g, " ");
-      const code = $("joinCode").value.trim().toUpperCase();
-      clearError("lobbyError");
-      if (!name) { showError("lobbyError", "Pick a nickname first."); return; }
-      if (name.length > 18) { showError("lobbyError", "Keep your nickname under 18 characters."); return; }
-      if (code && !/^[A-Z0-9]{5}$/.test(code)) { showError("lobbyError", "Room codes have 5 letters or numbers."); return; }
-      busy = true;
-      $("enterRoom").disabled = true;
-      $("enterRoom").textContent = code ? "Joining the room…" : "Creating your room…";
-      try {
-        if (code) await joinRoom(code, name);
-        else await createRoom(name);
-      } catch (error) {
-        showError("lobbyError", error && error.message ? error.message : "Couldn't connect to the room.");
-      } finally {
-        busy = false;
-        $("enterRoom").disabled = false;
-        $("enterRoom").textContent = "Create a room ↗";
-      }
-    }
-    async function startGame() {
-      if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
-      const ids = Object.keys(currentRoom.players || {});
-      if (ids.length < 3) { say("Invite at least 3 players to start."); return; }
-      busy = true;
-      $("startGame").disabled = true;
-      const themeSequence = [...shuffled(THEMES.filter(theme => theme.id !== "photo-sharing").map(theme => theme.id)).slice(0, 3), "photo-sharing"];
-      try {
-        await runTransaction(currentRoomRef, (room) => {
-          if (!room || room.phase !== "lobby" || room.hostId !== uid || Object.keys(room.players || {}).length < 3) return;
-          room.phase = "answering";
-          room.round = 1;
-          room.maxRounds = TOTAL_ROUNDS;
-          room.participants = Object.keys(room.players);
-          room.themeSequence = themeSequence;
-          room.themeId = themeSequence[0];
-          room.scores = {};
-          Object.keys(room.players).forEach(id => { room.scores[id] = 0; });
-          room.prompt = THEME_BY_ID[room.themeId].role;
-          room.photoOptions = {};
-          room.answers = {};
-          room.assignments = {};
-          room.twists = {};
-          room.votes = {};
-          room.voteTally = {};
-          room.scores = {};
-          Object.keys(room.players).forEach(id => { room.scores[id] = 0; });
-          return room;
-        }, { applyLocally: false });
-      } catch (error) { say("Couldn't start. Check the database connection."); }
-      finally { busy = false; }
-    }
-    async function submitAnswer() {
-      const text = $("answerInput").value.trim();
-      if (!text || text.length > 240 || busy || !currentRoomRef) return;
-      busy = true; $("submitAnswer").disabled = true;
-      try {
-        await set(ref(db, "rooms/" + currentCode + "/answers/" + uid), { text, createdAt: Date.now() });
-        $("answerInput").value = "";
-        say("Answer locked.");
-      } catch (error) { say("Couldn't submit. Check your connection."); }
-      finally { busy = false; if (currentRoom) renderRoom(); }
-    }
-    async function submitRewrite() {
-      const text = $("rewriteInput").value.trim();
-      if (!text || text.length > 240 || busy || !currentRoomRef) return;
-      busy = true; $("submitRewrite").disabled = true;
-      try {
-        await set(ref(db, "rooms/" + currentCode + "/twists/" + uid), { text, createdAt: Date.now() });
-        $("rewriteInput").value = "";
-        say("Context published.");
-      } catch (error) { say("Couldn't publish. Check your connection."); }
-      finally { busy = false; if (currentRoom) renderRoom(); }
-    }
-    async function castVote(authorId) {
-      if (!currentRoomRef || busy || !currentRoom || authorId === uid || (currentRoom.votes && currentRoom.votes[uid])) return;
-      busy = true;
-      try {
-        await set(ref(db, "rooms/" + currentCode + "/votes/" + uid), authorId);
-        say("Vote locked.");
-      } catch (error) { say("Couldn't vote. Check your connection."); }
-      finally { busy = false; if (currentRoom) renderRoom(); }
-    }
-    async function nextRound() {
-      if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
-      busy = true; $("nextRound").disabled = true;
-      try {
-        await runTransaction(currentRoomRef, (room) => {
-          if (!room || room.phase !== "results" || room.hostId !== uid) return;
-          if (Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS)) {
-            room.phase = "finished";
-            return room;
-          }
-          room.round = Number(room.round || 1) + 1;
-          room.prompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
-          room.phase = "answering";
-          room.answers = {};
-          room.assignments = {};
-          room.twists = {};
-          room.votes = {};
-          room.voteTally = {};
-          return room;
-        }, { applyLocally: false });
-      } catch (error) { say("Couldn't start the next round."); }
-      finally { busy = false; if (currentRoom) renderRoom(); }
-    }
-    async function playAgain() {
-      if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
-      busy = true; $("playAgain").disabled = true;
-      try {
-        await runTransaction(currentRoomRef, (room) => {
-          if (!room || room.phase !== "finished" || room.hostId !== uid) return;
-          room.phase = "lobby"; room.round = 1; room.prompt = null; room.participants = null;
-          room.answers = {}; room.assignments = {}; room.twists = {}; room.votes = {}; room.voteTally = {};
-          room.scores = {};
-          Object.keys(room.players || {}).forEach(id => { room.scores[id] = 0; });
-          return room;
-        }, { applyLocally: false });
-      } catch (error) { say("Couldn't reset the room."); }
-      finally { busy = false; $("playAgain").disabled = false; }
-    }
-    async function copyCode() {
-      if (!currentCode) return;
-      try { await navigator.clipboard.writeText(currentCode); say("Room code copied."); }
-      catch (_) { window.prompt("Copy this room code for your friends:", currentCode); }
-    }
-    function returnToLobby() {
-      if (roomListener) { roomListener(); roomListener = null; }
-      currentCode = null; currentRoomRef = null; currentRoom = null; lastPhase = ""; lastVoteSignature = "";
-      localStorage.removeItem("is_room_code");
-      showScreen("lobby"); setConnection("online", "Connected");
-    }
-    async function tryResume() {
-      $("playerName").value = localStorage.getItem("is_player_name") || "";
-      const savedCode = localStorage.getItem("is_room_code");
-      if (!savedCode || !uid) { setConnection("online", "Connected"); return; }
-      try {
-        const roomSnapshot = await get(ref(db, "rooms/" + savedCode));
-        if (!roomSnapshot.exists() || !(roomSnapshot.val().players && roomSnapshot.val().players[uid])) {
-          localStorage.removeItem("is_room_code"); setConnection("online", "Connected"); return;
-        }
-        const playerRef = ref(db, "rooms/" + savedCode + "/players/" + uid);
-        await update(playerRef, { online: true });
-        attachRoom(savedCode);
-      } catch (error) {
-        console.warn("Could not resume previous room", error);
-        setConnection("offline", "Setup needed");
-      }
-    }
+const $ = (id) => document.getElementById(id);
+const show = (id) => $(id).classList.remove("hidden");
+const hide = (id) => $(id).classList.add("hidden");
+const setConnection = (state, label) => {
+$("connectionDot").className = "dot " + state;
+$("connectionLabel").textContent = label;
+};
+function say(message) {
+$("toast").textContent = message;
+show("toast");
+if (toastTimer) clearTimeout(toastTimer);
+toastTimer = setTimeout(() => hide("toast"), 2600);
+}
+function showError(id, message) {
+$(id).textContent = message;
+show(id);
+}
+function clearError(id) { hide(id); $(id).textContent = ""; }
+function showScreen(name) {
+document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
+$("screen-" + name).classList.add("active");
+}
+function newCode() {
+let out = "";
+for (let i = 0; i < 5; i++) out += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+return out;
+}
+function safeText(el, value) { el.textContent = value == null ? "" : String(value); }
+function shuffled(items) {
+const out = [...items];
+for (let i = out.length - 1; i > 0; i--) {
+const j = Math.floor(Math.random() * (i + 1));
+[out[i], out[j]] = [out[j], out[i]];
+}
+return out;
+}
+function themeFor(room) { return THEME_BY_ID[(room && room.themeId) || "video-site"]; }
+function answerSubmitted(room, id) {
+const answer = room && room.answers && room.answers[id];
+return Boolean(answer && (room.themeId === "photo-sharing" ? answer.photoId : answer.text));
+}
+function photoFor(id) { return PHOTO_LIBRARY.find(photo => photo.id === id) || PHOTO_LIBRARY[0]; }
+function buildPhotoOptions(ids) {
+const options = {};
+ids.forEach(id => { options[id] = shuffled(PHOTO_LIBRARY).slice(0, 2).map(photo => photo.id); });
+return options;
+}
+function appendPhoto(container, id, className = "photo-display") {
+const photo = photoFor(id);
+const img = document.createElement("img");
+img.className = className; img.src = photo.url; img.alt = photo.label; img.loading = "lazy";
+img.addEventListener("error", () => { img.alt = "Photo unavailable"; img.style.display = "none"; }, { once: true });
+container.append(img);
+return img;
+}
+function playerNameFor(room, id) {
+return (room.players && room.players[id] && room.players[id].name) || "Anonymous legend";
+}
+function phaseName(phase) {
+return ({lobby:"Lobby", answering:"Answering", rewriting:"Reframing", voting:"Voting", results:"Results", finished:"Finished"})[phase] || "In game";
+}
+function participantIds(room) {
+return Array.isArray(room.participants) ? room.participants : Object.keys(room.players || {});
+}
+function addPlayerRow(list, name, subtitle, trailing, index) {
+const li = document.createElement("li");
+const person = document.createElement("div"); person.className = "person";
+const avatar = document.createElement("span"); avatar.className = "avatar"; avatar.textContent = (name || "?").slice(0,1).toUpperCase();
+const info = document.createElement("div");
+const nm = document.createElement("div"); nm.className = "person-name"; nm.textContent = name;
+const meta = document.createElement("div"); meta.className = "meta"; meta.textContent = subtitle || "";
+info.append(nm, meta); person.append(avatar, info); li.append(person);
+if (trailing) { const end = document.createElement("span"); end.className = "tag"; end.textContent = trailing; li.append(end); }
+list.append(li);
+}
+function makeVoteCard(authorId, room) {
+const answers = room.answers || {};
+const twists = room.twists || {};
+const targetId = (room.assignments || {})[authorId];
+const answer = answers[targetId] || {};
+const card = document.createElement("button");
+card.type = "button";
+card.className = "vote-card";
+const hint = document.createElement("div");
+hint.className = "hint";
+hint.textContent = themeFor(room).name.toUpperCase();
+const content = document.createElement("div");
+content.className = room.themeId === "photo-sharing" ? "photo-caption" : "context";
+content.textContent = (twists[authorId] && twists[authorId].text) || "";
+if (room.themeId === "photo-sharing") {
+card.append(hint);
+appendPhoto(card, answer.photoId);
+card.append(content);
+} else {
+const quote = document.createElement("div");
+quote.className = "quote";
+quote.textContent = "“" + (answer.text || "(no answer)") + "”";
+card.append(hint, content, quote);
+}
+card.addEventListener("click", () => castVote(authorId));
+return card;
+}
+function renderLobby(room) {
+$("roomCodeDisplay").textContent = currentCode || "-----";
+const players = room.players || {};
+const ids = Object.keys(players);
+$("waitingPlayers").replaceChildren();
+ids.sort((a,b) => (players[a].joinedAt || 0) - (players[b].joinedAt || 0));
+ids.forEach((id, i) => {
+const isHost = id === room.hostId;
+addPlayerRow($("waitingPlayers"), players[id].name || "Player", id === uid ? "That's you" : (players[id].online === false ? "Reconnecting…" : "Ready to play"), isHost ? "HOST" : "PLAYER", i);
+});
+const isHost = room.hostId === uid;
+$("hostNotice").textContent = isHost
+? (ids.length < 3 ? "You're hosting. Invite at least " + (3 - ids.length) + " more friend(s) to start." : "You're hosting. Everyone's here — start whenever.")
+: "The host will start the game once at least 3 players have joined.";
+$("startGame").classList.toggle("hidden", !isHost);
+$("startGame").disabled = ids.length < 3 || busy;
+$("startGame").textContent = ids.length < 3 ? "Waiting for 3 players…" : "Start the chaos ↗";
+}
+function renderAnswering(room) {
+const theme = themeFor(room);
+$("roundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
+safeText($("answerKicker"), "ROUND " + room.round + " · " + theme.name.toUpperCase());
+safeText($("promptTitle"), theme.role);
+safeText($("promptDescription"), room.themeId === "photo-sharing"
+? "Pick one of these two photos for your post. Someone else will write the caption."
+: "Write something that fits this part of the internet. The next player will invent the context.");
+const answers = room.answers || {};
+const answer = answers[uid] || null;
+const submitted = answerSubmitted(room, uid);
+const photoRound = room.themeId === "photo-sharing";
+$("answerTextFields").classList.toggle("hidden", photoRound);
+$("submitAnswer").classList.toggle("hidden", photoRound);
+$("photoPicker").classList.toggle("hidden", !photoRound);
+$("answerInput").placeholder = theme.placeholder || "Write your post…";
+$("answerInput").disabled = submitted || busy;
+$("submitAnswer").disabled = submitted || busy;
+$("submitAnswer").textContent = submitted ? "Answer locked ✓" : "Lock in answer";
+if (photoRound) {
+const picker = $("photoPicker");
+picker.replaceChildren();
+const options = (room.photoOptions && room.photoOptions[uid]) || PHOTO_LIBRARY.slice(0, 2).map(photo => photo.id);
+options.forEach((photoId) => {
+const photo = photoFor(photoId);
+const choice = document.createElement("button");
+choice.type = "button";
+choice.className = "photo-choice" + (answer && answer.photoId === photoId ? " selected" : "");
+choice.disabled = submitted || busy;
+choice.setAttribute("aria-label", "Choose photo: " + photo.label);
+appendPhoto(choice, photoId, "photo-thumb");
+const label = document.createElement("span"); label.className = "photo-choice-title"; label.textContent = photo.label;
+const cta = document.createElement("span"); cta.className = "photo-choice-cta";
+cta.textContent = answer && answer.photoId === photoId ? "Selected ✓" : (submitted ? "Not selected" : "Use this photo");
+choice.append(label, cta);
+choice.addEventListener("click", () => submitPhotoChoice(photoId));
+picker.append(choice);
+});
+}
+$("answerStatus").classList.toggle("hidden", !submitted);
+if (submitted) $("answerStatus").textContent = photoRound
+? "Photo selected. Waiting for everyone else to choose…"
+: "Answer locked. Waiting for everyone else to answer…";
+}
+function renderRewriting(room) {
+$("rewriteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
+const theme = themeFor(room);
+safeText($("rewriteTitle"), theme.frame);
+safeText($("rewriteKicker"), "ROUND " + room.round + " · " + theme.name.toUpperCase());
+safeText($("rewriteLabel"), room.themeId === "photo-sharing" ? "THE POST CAPTION" : "THE INTERNET'S VERSION");
+$("rewriteInput").placeholder = theme.placeholder || "Add your context…";
+const targetId = (room.assignments || {})[uid];
+const answer = targetId && room.answers && room.answers[targetId];
+$("answerToReframe").replaceChildren();
+if (answer && room.themeId === "photo-sharing") appendPhoto($("answerToReframe"), answer.photoId);
+else safeText($("answerToReframe"), answer ? "“" + (answer.text || "") + "”" : "Your post is being assigned…");
+const submitted = Boolean((room.twists || {})[uid]);
+$("rewriteInput").disabled = submitted || busy;
+$("submitRewrite").disabled = submitted || busy || !answer;
+$("submitRewrite").textContent = submitted ? "Post published ✓" : "Publish your slander";
+$("rewriteStatus").classList.toggle("hidden", !submitted);
+if (submitted) $("rewriteStatus").textContent = "Posted. The jury is assembling…";
+}
+function renderVoting(room) {
+$("voteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
+const ownVote = (room.votes || {})[uid];
+const signature = JSON.stringify([room.twists || {}, room.answers || {}, ownVote || null]);
+if (signature !== lastVoteSignature) {
+lastVoteSignature = signature;
+const container = $("votingCards");
+container.replaceChildren();
+if (ownVote) {
+const status = document.createElement("div"); status.className = "status good"; status.textContent = "Vote locked. Waiting for the rest of the jury…"; container.append(status);
+} else {
+Object.keys(room.twists || {}).filter((authorId) => authorId !== uid).sort().forEach((authorId) => container.append(makeVoteCard(authorId, room)));
+if (container.childElementCount === 0) {
+const status = document.createElement("div"); status.className = "status"; status.textContent = "Waiting for more entries…"; container.append(status);
+}
+}
+}
+$("voteStatus").classList.add("hidden");
+}
+function renderResults(room) {
+$("resultRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
+const reveal = $("roundReveal"); reveal.replaceChildren();
+const voteMap = room.votes || {};
+const assignments = room.assignments || {};
+const answers = room.answers || {};
+const twists = room.twists || {};
+Object.keys(twists).sort((a,b) => {
+const va = Object.values(voteMap).filter(v => v === a).length;
+const vb = Object.values(voteMap).filter(v => v === b).length;
+return vb - va;
+}).forEach((authorId) => {
+const wrap = document.createElement("div"); wrap.className = "vote-card"; wrap.style.cursor = "default";
+const title = document.createElement("div"); title.className = "context"; title.textContent = twists[authorId].text;
+const quote = document.createElement("div"); quote.className = "quote"; quote.textContent = "“" + ((answers[assignments[authorId]] && answers[assignments[authorId]].text) || "") + "”";
+const votes = Object.values(voteMap).filter(v => v === authorId).length;
+const credits = document.createElement("div"); credits.className = "meta"; credits.style.marginTop = "10px";
+credits.textContent = "Reframed by " + playerNameFor(room, authorId) + " · Original answer by " + playerNameFor(room, assignments[authorId]) + " · " + votes + " vote(s)";
+wrap.append(title, quote, credits); reveal.append(wrap);
+});
+const players = room.players || {};
+const scores = room.scores || {};
+const ranked = Object.keys(players).sort((a,b) => (scores[b] || 0) - (scores[a] || 0));
+$("scoreList").replaceChildren();
+ranked.forEach((id, i) => addPlayerRow($("scoreList"), players[id].name || "Player", (i === 0 ? "Top of the chaos" : "Total score"), (scores[id] || 0) + " pts", i));
+$("nextRound").textContent = Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS) ? "Reveal final standings ↗" : "Next round ↗";
+$("nextRound").disabled = room.hostId !== uid || busy;
+$("nextRound").classList.toggle("hidden", room.hostId !== uid);
+}
+function renderFinished(room) {
+const players = room.players || {};
+const scores = room.scores || {};
+const ranked = Object.keys(players).sort((a,b) => (scores[b] || 0) - (scores[a] || 0));
+$("finalScoreList").replaceChildren();
+ranked.forEach((id, i) => addPlayerRow($("finalScoreList"), players[id].name || "Player", i === 0 ? "👑 chaos champion" : "Final score", (scores[id] || 0) + " pts", i));
+$("winnerPanel").replaceChildren();
+const title = document.createElement("h2");
+title.textContent = ranked.length ? "👑 " + playerNameFor(room, ranked[0]) + " wins." : "Nobody wins. Very on brand.";
+$("winnerPanel").append(title);
+$("playAgain").classList.toggle("hidden", room.hostId !== uid);
+$("playAgainNote").textContent = room.hostId === uid ? "A rematch resets everyone's score." : "Only the host can start a rematch.";
+}
+function renderRoom() {
+const room = currentRoom;
+if (!room) return;
+setConnection("online", "Live");
+$("roomCodeDisplay").textContent = currentCode || "-----";
+const phase = room.phase || "lobby";
+if (phase !== lastPhase) {
+lastPhase = phase;
+if (phase === "lobby") showScreen("room");
+else showScreen(phase);
+if (phase === "answering") { $("answerInput").value = ""; }
+if (phase === "rewriting") { $("rewriteInput").value = ""; lastVoteSignature = ""; }
+if (phase === "voting") lastVoteSignature = "";
+}
+$("roundPill").textContent = "ROUND " + (room.round || 1) + " / " + (room.maxRounds || TOTAL_ROUNDS);
+if (phase === "lobby") renderLobby(room);
+if (phase === "answering") renderAnswering(room);
+if (phase === "rewriting") renderRewriting(room);
+if (phase === "voting") renderVoting(room);
+if (phase === "results") renderResults(room);
+if (phase === "finished") renderFinished(room);
+maybeAdvance();
+}
+async function maybeAdvance() {
+if (!currentRoomRef || !uid || !currentRoom || busy) return;
+const current = currentRoom;
+if (current.hostId !== uid) return;
+const participants = participantIds(current);
+if (!participants.length) return;
+let shouldTry = false;
+if (current.phase === "answering") shouldTry = participants.every(id => answerSubmitted(current, id));
+if (current.phase === "rewriting") shouldTry = participants.every(id => current.twists && current.twists[id] && current.twists[id].text);
+if (current.phase === "voting") shouldTry = participants.every(id => current.votes && current.votes[id]);
+if (!shouldTry) return;
+try {
+await runTransaction(currentRoomRef, (room) => {
+if (!room || !Array.isArray(room.participants)) return;
+const ids = room.participants;
+if (room.phase === "answering" && ids.every(id => answerSubmitted(room, id))) {
+const assignments = {};
+ids.forEach((id, i) => { assignments[id] = ids[(i + 1) % ids.length]; });
+room.phase = "rewriting";
+room.assignments = assignments;
+room.twists = {};
+room.votes = {};
+return room;
+}
+if (room.phase === "rewriting" && ids.every(id => room.twists && room.twists[id] && room.twists[id].text)) {
+room.phase = "voting";
+room.votes = {};
+return room;
+}
+if (room.phase === "voting" && ids.every(id => room.votes && room.votes[id])) {
+const tally = {};
+ids.forEach(id => { tally[id] = 0; });
+Object.values(room.votes).forEach(target => { if (Object.prototype.hasOwnProperty.call(tally, target)) tally[target] += 1; });
+if (!room.scores) room.scores = {};
+Object.keys(tally).forEach(id => {
+room.scores[id] = (room.scores[id] || 0) + tally[id] * 100;
+});
+room.phase = "results";
+room.voteTally = tally;
+return room;
+}
+return;
+}, { applyLocally: false });
+} catch (error) {
+console.warn("Could not advance game phase", error);
+}
+}
+function attachRoom(code) {
+if (roomListener) roomListener();
+currentCode = code;
+currentRoomRef = ref(db, "rooms/" + code);
+localStorage.setItem("is_room_code", code);
+$("roomCodeDisplay").textContent = code;
+roomListener = onValue(currentRoomRef, (snapshot) => {
+if (!snapshot.exists()) {
+say("This room no longer exists.");
+returnToLobby();
+return;
+}
+currentRoom = snapshot.val();
+renderRoom();
+}, (error) => {
+setConnection("offline", "Access denied");
+say("Database access denied. Check the Firebase setup steps in the project README.");
+console.error(error);
+});
+setConnection("online", "Live");
+onDisconnect(ref(db, "rooms/" + code + "/players/" + uid + "/online")).set(false).catch(() => {});
+}
+async function createRoom(name) {
+let code = null;
+for (let i = 0; i < 6; i++) {
+const candidate = newCode();
+const candidateRef = ref(db, "rooms/" + candidate);
+const result = await runTransaction(candidateRef, (room) => {
+if (room) return;
+const players = {};
+players[uid] = { name, joinedAt: Date.now(), online: true };
+return {
+hostId: uid, phase: "lobby", round: 1, maxRounds: TOTAL_ROUNDS,
+createdAt: Date.now(), players, scores: { [uid]: 0 }, participants: null,
+prompt: null, answers: {}, assignments: {}, twists: {}, votes: {}
+};
+}, { applyLocally: false });
+if (result.committed) { code = candidate; break; }
+}
+if (!code) throw new Error("Couldn't find a free room code. Try again.");
+localStorage.setItem("is_player_name", name);
+attachRoom(code);
+return code;
+}
+async function joinRoom(code, name) {
+const phaseSnapshot = await get(ref(db, "rooms/" + code + "/phase"));
+if (!phaseSnapshot.exists()) throw new Error("Room not found. Check the code and try again.");
+const phase = phaseSnapshot.val();
+const playerRef = ref(db, "rooms/" + code + "/players/" + uid);
+const existingSnapshot = await get(playerRef);
+if (phase !== "lobby" && !existingSnapshot.exists()) {
+throw new Error("This game has already started. Ask the host for a new room.");
+}
+const playersSnapshot = await get(ref(db, "rooms/" + code + "/players"));
+const players = playersSnapshot.val() || {};
+if (!existingSnapshot.exists() && Object.keys(players).length >= MAX_PLAYERS) {
+throw new Error("This room is full. Ask the host to start another room.");
+}
+const old = existingSnapshot.val() || { joinedAt: Date.now() };
+await set(playerRef, { ...old, name, online: true, joinedAt: old.joinedAt || Date.now() });
+localStorage.setItem("is_player_name", name);
+attachRoom(code);
+return code;
+}
+async function enterRoom() {
+if (busy || !uid) return;
+const name = $("playerName").value.trim().replace(/\s+/g, " ");
+const code = $("joinCode").value.trim().toUpperCase();
+clearError("lobbyError");
+if (!name) { showError("lobbyError", "Pick a nickname first."); return; }
+if (name.length > 18) { showError("lobbyError", "Keep your nickname under 18 characters."); return; }
+if (code && !/^[A-Z0-9]{5}$/.test(code)) { showError("lobbyError", "Room codes have 5 letters or numbers."); return; }
+busy = true;
+$("enterRoom").disabled = true;
+$("enterRoom").textContent = code ? "Joining the room…" : "Creating your room…";
+try {
+if (code) await joinRoom(code, name);
+else await createRoom(name);
+} catch (error) {
+showError("lobbyError", error && error.message ? error.message : "Couldn't connect to the room.");
+} finally {
+busy = false;
+$("enterRoom").disabled = false;
+$("enterRoom").textContent = "Create a room ↗";
+}
+}
+async function startGame() {
+if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
+const ids = Object.keys(currentRoom.players || {});
+if (ids.length < 3) { say("Invite at least 3 players to start."); return; }
+busy = true;
+$("startGame").disabled = true;
+const themeSequence = [...shuffled(THEMES.filter(theme => theme.id !== "photo-sharing").map(theme => theme.id)).slice(0, 3), "photo-sharing"];
+try {
+await runTransaction(currentRoomRef, (room) => {
+if (!room || room.phase !== "lobby" || room.hostId !== uid || Object.keys(room.players || {}).length < 3) return;
+room.phase = "answering";
+room.round = 1;
+room.maxRounds = TOTAL_ROUNDS;
+room.participants = Object.keys(room.players);
+room.themeSequence = themeSequence;
+room.themeId = themeSequence[0];
+room.scores = {};
+Object.keys(room.players).forEach(id => { room.scores[id] = 0; });
+room.prompt = THEME_BY_ID[room.themeId].role;
+room.photoOptions = {};
+room.answers = {};
+room.assignments = {};
+room.twists = {};
+room.votes = {};
+room.voteTally = {};
+room.scores = {};
+Object.keys(room.players).forEach(id => { room.scores[id] = 0; });
+return room;
+}, { applyLocally: false });
+} catch (error) { say("Couldn't start. Check the database connection."); }
+finally { busy = false; }
+}
+async function submitAnswer() {
+const text = $("answerInput").value.trim();
+if (!text || text.length > 240 || busy || !currentRoomRef) return;
+busy = true; $("submitAnswer").disabled = true;
+try {
+await set(ref(db, "rooms/" + currentCode + "/answers/" + uid), { text, createdAt: Date.now() });
+$("answerInput").value = "";
+say("Answer locked.");
+} catch (error) { say("Couldn't submit. Check your connection."); }
+finally { busy = false; if (currentRoom) renderRoom(); }
+}
+async function submitRewrite() {
+const text = $("rewriteInput").value.trim();
+if (!text || text.length > 240 || busy || !currentRoomRef) return;
+busy = true; $("submitRewrite").disabled = true;
+try {
+await set(ref(db, "rooms/" + currentCode + "/twists/" + uid), { text, createdAt: Date.now() });
+$("rewriteInput").value = "";
+say("Context published.");
+} catch (error) { say("Couldn't publish. Check your connection."); }
+finally { busy = false; if (currentRoom) renderRoom(); }
+}
+async function castVote(authorId) {
+if (!currentRoomRef || busy || !currentRoom || authorId === uid || (currentRoom.votes && currentRoom.votes[uid])) return;
+busy = true;
+try {
+await set(ref(db, "rooms/" + currentCode + "/votes/" + uid), authorId);
+say("Vote locked.");
+} catch (error) { say("Couldn't vote. Check your connection."); }
+finally { busy = false; if (currentRoom) renderRoom(); }
+}
+async function nextRound() {
+if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
+busy = true; $("nextRound").disabled = true;
+try {
+await runTransaction(currentRoomRef, (room) => {
+if (!room || room.phase !== "results" || room.hostId !== uid) return;
+if (Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS)) {
+room.phase = "finished";
+return room;
+}
+room.round = Number(room.round || 1) + 1;
+room.prompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+room.phase = "answering";
+room.answers = {};
+room.assignments = {};
+room.twists = {};
+room.votes = {};
+room.voteTally = {};
+return room;
+}, { applyLocally: false });
+} catch (error) { say("Couldn't start the next round."); }
+finally { busy = false; if (currentRoom) renderRoom(); }
+}
+async function playAgain() {
+if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
+busy = true; $("playAgain").disabled = true;
+try {
+await runTransaction(currentRoomRef, (room) => {
+if (!room || room.phase !== "finished" || room.hostId !== uid) return;
+room.phase = "lobby"; room.round = 1; room.prompt = null; room.participants = null;
+room.answers = {}; room.assignments = {}; room.twists = {}; room.votes = {}; room.voteTally = {};
+room.scores = {};
+Object.keys(room.players || {}).forEach(id => { room.scores[id] = 0; });
+return room;
+}, { applyLocally: false });
+} catch (error) { say("Couldn't reset the room."); }
+finally { busy = false; $("playAgain").disabled = false; }
+}
+async function copyCode() {
+if (!currentCode) return;
+try { await navigator.clipboard.writeText(currentCode); say("Room code copied."); }
+catch (_) { window.prompt("Copy this room code for your friends:", currentCode); }
+}
+function returnToLobby() {
+if (roomListener) { roomListener(); roomListener = null; }
+currentCode = null; currentRoomRef = null; currentRoom = null; lastPhase = ""; lastVoteSignature = "";
+localStorage.removeItem("is_room_code");
+showScreen("lobby"); setConnection("online", "Connected");
+}
+async function tryResume() {
+$("playerName").value = localStorage.getItem("is_player_name") || "";
+const savedCode = localStorage.getItem("is_room_code");
+if (!savedCode || !uid) { setConnection("online", "Connected"); return; }
+try {
+const roomSnapshot = await get(ref(db, "rooms/" + savedCode));
+if (!roomSnapshot.exists() || !(roomSnapshot.val().players && roomSnapshot.val().players[uid])) {
+localStorage.removeItem("is_room_code"); setConnection("online", "Connected"); return;
+}
+const playerRef = ref(db, "rooms/" + savedCode + "/players/" + uid);
+await update(playerRef, { online: true });
+attachRoom(savedCode);
+} catch (error) {
+console.warn("Could not resume previous room", error);
+setConnection("offline", "Setup needed");
+}
+}
 
-    $("enterRoom").addEventListener("click", enterRoom);
-    $("playerName").addEventListener("keydown", e => { if (e.key === "Enter") $("joinCode").focus(); });
-    $("joinCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0,5); });
-    $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") enterRoom(); });
-    $("startGame").addEventListener("click", startGame);
-    $("submitAnswer").addEventListener("click", submitAnswer);
-    $("submitRewrite").addEventListener("click", submitRewrite);
-    $("nextRound").addEventListener("click", nextRound);
-    $("playAgain").addEventListener("click", playAgain);
-    $("copyRoomCode").addEventListener("click", copyCode);
+$("enterRoom").addEventListener("click", enterRoom);
+$("playerName").addEventListener("keydown", e => { if (e.key === "Enter") $("joinCode").focus(); });
+$("joinCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0,5); });
+$("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") enterRoom(); });
+$("startGame").addEventListener("click", startGame);
+$("submitAnswer").addEventListener("click", submitAnswer);
+$("submitRewrite").addEventListener("click", submitRewrite);
+$("nextRound").addEventListener("click", nextRound);
+$("playAgain").addEventListener("click", playAgain);
+$("copyRoomCode").addEventListener("click", copyCode);
 
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        uid = user.uid;
-        setConnection("online", "Connected");
-        await tryResume();
-      } else {
-        setConnection("", "Signing in");
-      }
-    });
-    signInAnonymously(auth).catch((error) => {
-      console.error("Anonymous sign-in failed", error);
-      setConnection("offline", "Setup needed");
-      showError("lobbyError", "Firebase anonymous sign-in isn't enabled yet. Open the project's README and complete the one-time Firebase setup.");
-    });
-    window.addEventListener("online", () => setConnection("online", "Connected"));
-    window.addEventListener("offline", () => setConnection("offline", "Offline"));
-  </script>
+onAuthStateChanged(auth, async (user) => {
+if (user) {
+uid = user.uid;
+setConnection("online", "Connected");
+await tryResume();
+} else {
+setConnection("", "Signing in");
+}
+});
+signInAnonymously(auth).catch((error) => {
+console.error("Anonymous sign-in failed", error);
+setConnection("offline", "Setup needed");
+showError("lobbyError", "Firebase anonymous sign-in isn't enabled yet. Open the project's README and complete the one-time Firebase setup.");
+});
+window.addEventListener("online", () => setConnection("online", "Connected"));
+window.addEventListener("offline", () => setConnection("offline", "Offline"));
+</script>
 </body>
 </html>
