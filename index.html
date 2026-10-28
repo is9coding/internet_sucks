@@ -62,6 +62,16 @@
     .person-name{font-weight:850;overflow-wrap:anywhere}.meta{font-size:11px;color:var(--muted)}
     .tag{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:99px;padding:5px 7px;background:#2c2b41;color:var(--cyan)}
     .quote{padding:16px 17px;background:#10101b;border:1px solid #39384f;border-left:4px solid var(--cyan);border-radius:0 14px 14px 0;font-size:18px;line-height:1.45;font-weight:800;margin:15px 0;overflow-wrap:anywhere}
+    .photo-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+    .photo-choice{display:flex;flex-direction:column;gap:9px;text-align:left;padding:10px;background:#10101b;border:2px solid #3c3a55;border-radius:16px;color:var(--ink);min-width:0}
+    .photo-choice:hover{border-color:var(--lime)}
+    .photo-choice.selected{border-color:var(--lime);box-shadow:0 0 0 2px #c8ff5a20}
+    .photo-choice:disabled{cursor:default;opacity:.8}
+    .photo-thumb{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;border-radius:10px;background:#2b2a40}
+    .photo-choice-title{font-size:12px;line-height:1.35;font-weight:850}
+    .photo-choice-cta{font-size:10px;color:var(--lime);font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+    .photo-display{display:block;width:100%;max-height:360px;aspect-ratio:4/5;object-fit:cover;border-radius:13px;background:#2b2a40;margin:12px 0}
+    .photo-caption{font-size:15px;line-height:1.5;font-weight:700;overflow-wrap:anywhere;margin-top:9px}
     .vote-card{width:100%;text-align:left;padding:16px;margin:0 0 12px;background:#11111c;border:1px solid #45435d;color:var(--ink);border-radius:16px}
     .vote-card:hover{border-color:var(--lime);background:#1a1a29}
     .vote-card .context{font-size:17px;font-weight:900;line-height:1.35;overflow-wrap:anywhere}
@@ -106,7 +116,7 @@
         <input id="joinCode" maxlength="5" autocapitalize="characters" autocomplete="off" placeholder="5 LETTERS / NUMBERS" style="text-transform:uppercase;letter-spacing:.16em">
         <button id="enterRoom" class="btn">Create a room <span aria-hidden="true">↗</span></button>
         <div id="lobbyError" class="status bad hidden" role="alert"></div>
-        <p class="subtle" style="margin-top:14px;margin-bottom:0">Best with 3–8 friends · 5 rounds · no app download</p>
+        <p class="subtle" style="margin-top:14px;margin-bottom:0">Best with 3–8 friends · 4 rounds · no app download</p>
       </div>
     </section>
 
@@ -129,12 +139,15 @@
     <section id="screen-answering" class="screen">
       <div class="card">
         <div class="roombar"><span class="pill" id="roundPill">ROUND 1 / 5</span><span class="pill">01 · ANSWER</span></div>
-        <div class="kicker">Say the first thing that comes to mind</div>
-        <h2 id="promptTitle">Loading the prompt…</h2>
-        <p>Keep it short. Your friends will be given the chance to take this wildly out of context.</p>
-        <label class="field-label" for="answerInput">YOUR ANSWER</label>
-        <textarea id="answerInput" maxlength="240" placeholder="Type something your future self may regret…"></textarea>
-        <button id="submitAnswer" class="btn">Lock in answer</button>
+        <div class="kicker" id="answerKicker">ROUND 1 · YOUR POST</div>
+        <h2 id="promptTitle">Loading the theme…</h2>
+        <p id="promptDescription">Write something that fits this part of the internet. The next player will take it wildly out of context.</p>
+        <div id="answerTextFields">
+          <label class="field-label" for="answerInput">YOUR CONTRIBUTION</label>
+          <textarea id="answerInput" maxlength="240" placeholder="Type something your future self may regret…"></textarea>
+          <button id="submitAnswer" class="btn">Lock in answer</button>
+        </div>
+        <div id="photoPicker" class="photo-picker hidden" aria-label="Choose one photo"></div>
         <div id="answerStatus" class="status hidden" aria-live="polite"></div>
       </div>
     </section>
@@ -142,11 +155,11 @@
     <section id="screen-rewriting" class="screen">
       <div class="card">
         <div class="roombar"><span class="pill" id="rewriteRoundPill">ROUND 1 / 5</span><span class="pill">02 · REFRAME</span></div>
-        <div class="kicker">A little context can ruin anything</div>
-        <h2>Make this look suspicious.</h2>
-        <p>Someone in the room said this. Write a fake headline, caption, or context that makes it hilariously worse.</p>
+        <div class="kicker" id="rewriteKicker">THE TWISTER'S PROMPT</div>
+        <h2 id="rewriteTitle">Make this look suspicious.</h2>
+        <p id="rewriteDescription">Someone in the room made this post. Add the context that makes it hilariously worse.</p>
         <div class="quote" id="answerToReframe"></div>
-        <label class="field-label" for="rewriteInput">THE INTERNET'S VERSION</label>
+        <label class="field-label" id="rewriteLabel" for="rewriteInput">THE INTERNET'S VERSION</label>
         <textarea id="rewriteInput" maxlength="240" placeholder="Breaking: local person admits…"></textarea>
         <button id="submitRewrite" class="btn pink">Publish your slander</button>
         <div id="rewriteStatus" class="status hidden" aria-live="polite"></div>
