@@ -266,6 +266,20 @@
       {id:"photo-sharing",name:"Photo Sharing Site",role:"A photo on their personal feed",frame:"Write the caption they put under this photo."}
     ];
     const THEME_BY_ID = Object.fromEntries(THEMES.map(theme => [theme.id, theme]));
+    const PHOTO_LIBRARY = [
+      {id:"cat-window",label:"A cat by a window",url:"https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=900&q=82"},
+      {id:"cat-glasses",label:"A cat with main-character energy",url:"https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&w=900&q=82"},
+      {id:"golden-dog",label:"A golden dog posing for the camera",url:"https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=900&q=82"},
+      {id:"dog-friend",label:"A very good dog",url:"https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=900&q=82"},
+      {id:"concert-crowd",label:"A crowd at a concert",url:"https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=82"},
+      {id:"mountain-trip",label:"A mountain getaway",url:"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"},
+      {id:"street-style",label:"A street-style outfit",url:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=82"},
+      {id:"desk-setup",label:"A very tidy desk",url:"https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=82"},
+      {id:"fancy-dinner",label:"A fancy dinner",url:"https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=82"},
+      {id:"coffee-vibe",label:"Coffee and a life choice",url:"https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82"},
+      {id:"beach-day",label:"A beach day",url:"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=82"},
+      {id:"birthday-party",label:"A birthday party",url:"https://images.unsplash.com/photo-1530103862676-de8c9debad1?auto=format&fit=crop&w=900&q=82"}
+    ];
     const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const MAX_PLAYERS = 12;
     const TOTAL_ROUNDS = 4;
