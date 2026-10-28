@@ -277,7 +277,6 @@ function deriveTrustedRequest(base: AiTurnRequest, room: Record<string, any>): A
   return input;
 }
 
-function promptFor
 function promptFor(input: AiTurnRequest): { prompt: string; schema: Record<string, unknown> } {
   const persona = PERSONAS[input.aiPlayerId];
   const theme = THEMES[input.themeId];
