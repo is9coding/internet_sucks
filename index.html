@@ -725,20 +725,9 @@ showScreen("lobby"); setConnection("online", "Connected");
 }
 async function tryResume() {
 $("playerName").value = localStorage.getItem("is_player_name") || "";
-const savedCode = localStorage.getItem("is_room_code");
-if (!savedCode || !uid) { setConnection("online", "Connected"); return; }
-try {
-const roomSnapshot = await get(ref(db, "rooms/" + savedCode));
-if (!roomSnapshot.exists() || !(roomSnapshot.val().players && roomSnapshot.val().players[uid])) {
-localStorage.removeItem("is_room_code"); setConnection("online", "Connected"); return;
-}
-const playerRef = ref(db, "rooms/" + savedCode + "/players/" + uid);
-await update(playerRef, { online: true });
-attachRoom(savedCode);
-} catch (error) {
-console.warn("Could not resume previous room", error);
-setConnection("offline", "Setup needed");
-}
+// A fresh page visit always starts at the lobby; never silently rejoin an old room.
+localStorage.removeItem("is_room_code");
+setConnection("online", "Connected");
 }
 
 $("enterRoom").addEventListener("click", enterRoom);
