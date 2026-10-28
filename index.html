@@ -782,13 +782,17 @@ try {
 if (aiId === "ai_bot_2") await new Promise(resolve => setTimeout(resolve, 500));
 let result;
 try {
+const firebaseUser = auth.currentUser;
+if (!firebaseUser) throw new Error("Firebase session is not ready");
+const idToken = await firebaseUser.getIdToken();
 const response = await fetch("/api/ai-turn", {
 method: "POST",
-headers: { "Content-Type": "application/json" },
+headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
 body: JSON.stringify(request),
 signal: AbortSignal.timeout(10000)
 });
 const payload = await response.json().catch(() => ({}));
+if (response.status === 409) return; // The phase or bot action changed while this request was in flight.
 if (!response.ok) throw new Error(payload.error || "AI service request failed");
 result = payload;
 if (payload.fallback && !aiFallbackNoticeShown) {
@@ -842,7 +846,7 @@ for (const aiId of activeParticipantIds(room).filter(isAiId)) {
 if (phaseActionComplete(room, room.phase, aiId)) continue;
 const request = aiRequestFor(room, aiId);
 if (room.phase === "rewriting" && !request.targetAnswer) continue;
-if (room.phase === "voting" && (!request.candidates || !request.candidates.length)) continue;
+// With no eligible entries, the server returns an abstention so the phase can still complete.
 void runOneAiAction(currentCode, Number(room.round), room.phase, aiId, request);
 }
 }
