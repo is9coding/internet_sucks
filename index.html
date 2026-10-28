@@ -325,6 +325,33 @@
       return out;
     }
     function safeText(el, value) { el.textContent = value == null ? "" : String(value); }
+    function shuffled(items) {
+      const out = [...items];
+      for (let i = out.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+      }
+      return out;
+    }
+    function themeFor(room) { return THEME_BY_ID[(room && room.themeId) || "video-site"]; }
+    function answerSubmitted(room, id) {
+      const answer = room && room.answers && room.answers[id];
+      return Boolean(answer && (room.themeId === "photo-sharing" ? answer.photoId : answer.text));
+    }
+    function photoFor(id) { return PHOTO_LIBRARY.find(photo => photo.id === id) || PHOTO_LIBRARY[0]; }
+    function buildPhotoOptions(ids) {
+      const options = {};
+      ids.forEach(id => { options[id] = shuffled(PHOTO_LIBRARY).slice(0, 2).map(photo => photo.id); });
+      return options;
+    }
+    function appendPhoto(container, id, className = "photo-display") {
+      const photo = photoFor(id);
+      const img = document.createElement("img");
+      img.className = className; img.src = photo.url; img.alt = photo.label; img.loading = "lazy";
+      img.addEventListener("error", () => { img.alt = "Photo unavailable"; img.style.display = "none"; }, { once: true });
+      container.append(img);
+      return img;
+    }
     function playerNameFor(room, id) {
       return (room.players && room.players[id] && room.players[id].name) || "Anonymous legend";
     }
