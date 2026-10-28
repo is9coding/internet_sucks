@@ -48,6 +48,12 @@ jobs:
                   raise SystemExit(f"Missing required game-flow code: {required}")
           if "Five rounds, then the final leaderboard." in readme:
               raise SystemExit("README still advertises five rounds")
+          import re
+          ids = set(re.findall(r'\\bid="([^"]+)"', html))
+          references = set(re.findall(r'\\$\("([^"]+)"\)', html))
+          missing_ids = sorted(references - ids)
+          if missing_ids:
+              raise SystemExit("JavaScript references missing HTML ids: " + ", ".join(missing_ids))
           PY
       - name: Configure Pages
         uses: actions/configure-pages@v5
