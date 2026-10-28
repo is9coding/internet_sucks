@@ -3,7 +3,7 @@
     "rooms": {
       "$room": {
         ".read": "auth != null && (!data.exists() || data.child('players').child(auth.uid).exists())",
-        ".write": "auth != null && ((!data.exists() && newData.child('hostId').val() === auth.uid) || data.child('hostId').val() === auth.uid)",
+        ".write": "auth != null && ((!data.exists() && newData.child('hostId').val() === auth.uid) || (data.child('hostId').val() === auth.uid && (!newData.exists() || data.child('players').child(auth.uid).child('online').val() === true)))",
         ".validate": "newData.hasChildren(['hostId', 'phase', 'players'])",
         "phase": {
           ".read": "auth != null"
@@ -16,19 +16,19 @@
         },
         "answers": {
           "$player": {
-            ".write": "auth != null && auth.uid === $player && root.child('rooms').child($room).child('phase').val() === 'answering' && !data.exists()",
-            ".validate": "newData.child('createdAt').isNumber() && ((newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 240 && root.child('rooms').child($room).child('themeId').val() !== 'photo-sharing') || (newData.child('photoId').isString() && newData.child('photoId').val().length > 0 && root.child('rooms').child($room).child('themeId').val() === 'photo-sharing' && (newData.child('photoId').val() === root.child('rooms').child($room).child('photoOptions').child(auth.uid).child('0').val() || newData.child('photoId').val() === root.child('rooms').child($room).child('photoOptions').child(auth.uid).child('1').val())))"
+            ".write": "auth != null && auth.uid === $player && root.child('rooms').child($room).child('phase').val() === 'answering' && !data.exists() && root.child('rooms').child($room).child('players').child(auth.uid).child('removed').val() !== true && root.child('rooms').child($room).child('players').child(root.child('rooms').child($room).child('hostId').val()).child('online').val() === true && root.child('rooms').child($room).child('players').child(root.child('rooms').child($room).child('hostId').val()).child('disconnectedAt').val() == null && root.child('rooms').child($room).child('phaseDeadline').isNumber() && root.child('rooms').child($room).child('phaseDeadline').val() > now",
+            ".validate": "newData.child('createdAt').isNumber() && (newData.child('skipped').val() !== true || auth.uid === root.child('rooms').child($room).child('hostId').val()) && ((newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 240 && root.child('rooms').child($room).child('themeId').val() !== 'photo-sharing') || (newData.child('photoId').isString() && newData.child('photoId').val().length > 0 && root.child('rooms').child($room).child('themeId').val() === 'photo-sharing' && (newData.child('photoId').val() === root.child('rooms').child($room).child('photoOptions').child(auth.uid).child('0').val() || newData.child('photoId').val() === root.child('rooms').child($room).child('photoOptions').child(auth.uid).child('1').val())))"
           }
         },
         "twists": {
           "$player": {
-            ".write": "auth != null && auth.uid === $player && root.child('rooms').child($room).child('phase').val() === 'rewriting' && !data.exists()",
-            ".validate": "newData.hasChildren(['text', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 240 && newData.child('createdAt').isNumber()"
+            ".write": "auth != null && auth.uid === $player && root.child('rooms').child($room).child('phase').val() === 'rewriting' && !data.exists() && root.child('rooms').child($room).child('players').child(auth.uid).child('removed').val() !== true && root.child('rooms').child($room).child('players').child(root.child('rooms').child($room).child('hostId').val()).child('online').val() === true && root.child('rooms').child($room).child('players').child(root.child('rooms').child($room).child('hostId').val()).child('disconnectedAt').val() == null && root.child('rooms').child($room).child('phaseDeadline').isNumber() && root.child('rooms').child($room).child('phaseDeadline').val() > now",
+            ".validate": "newData.hasChildren(['text', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 240 && newData.child('createdAt').isNumber() && (newData.child('skipped').val() !== true || auth.uid === root.child('rooms').child($room).child('hostId').val())"
           }
         },
         "votes": {
           "$player": {
-            ".write": "auth != null && auth.uid === $player && root.child('rooms').child($room).child('phase').val() === 'voting' && !data.exists() && newData.isString() && newData.val() !== auth.uid && root.child('rooms').child($room).child('twists').child(newData.val()).exists()"
+            ".write": "auth != null && auth.uid === $player && root.child('rooms').child($room).child('phase').val() === 'voting' && !data.exists() && newData.isString() && newData.val() !== auth.uid && root.child('rooms').child($room).child('twists').child(newData.val()).exists() && root.child('rooms').child($room).child('twists').child(newData.val()).child('skipped').val() !== true && root.child('rooms').child($room).child('players').child(auth.uid).child('removed').val() !== true && root.child('rooms').child($room).child('players').child(root.child('rooms').child($room).child('hostId').val()).child('online').val() === true && root.child('rooms').child($room).child('players').child(root.child('rooms').child($room).child('hostId').val()).child('disconnectedAt').val() == null && root.child('rooms').child($room).child('phaseDeadline').isNumber() && root.child('rooms').child($room).child('phaseDeadline').val() > now"
           }
         }
       }
