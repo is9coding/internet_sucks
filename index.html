@@ -70,7 +70,7 @@
 
 <section id="screen-answering" class="screen">
 <div class="card">
-<div class="roombar"><span class="pill" id="roundPill">ROUND 1 / 5</span><span class="pill">01 · ANSWER</span></div>
+<div class="roombar"><span class="pill" id="roundPill">ROUND 1 / 4</span><span class="pill">01 · ANSWER</span></div>
 <div class="kicker" id="answerKicker">ROUND 1 · YOUR POST</div>
 <h2 id="promptTitle">Loading the theme…</h2>
 <p id="promptDescription">Write something that fits this part of the internet. The next player will take it wildly out of context.</p>
@@ -86,7 +86,7 @@
 
 <section id="screen-rewriting" class="screen">
 <div class="card">
-<div class="roombar"><span class="pill" id="rewriteRoundPill">ROUND 1 / 5</span><span class="pill">02 · REFRAME</span></div>
+<div class="roombar"><span class="pill" id="rewriteRoundPill">ROUND 1 / 4</span><span class="pill">02 · REFRAME</span></div>
 <div class="kicker" id="rewriteKicker">THE TWISTER'S PROMPT</div>
 <h2 id="rewriteTitle">Make this look suspicious.</h2>
 <p id="rewriteDescription">Someone in the room made this post. Add the context that makes it hilariously worse.</p>
@@ -100,7 +100,7 @@
 
 <section id="screen-voting" class="screen">
 <div class="card">
-<div class="roombar"><span class="pill" id="voteRoundPill">ROUND 1 / 5</span><span class="pill">03 · VOTE</span></div>
+<div class="roombar"><span class="pill" id="voteRoundPill">ROUND 1 / 4</span><span class="pill">03 · VOTE</span></div>
 <div class="kicker">The group chat is the jury</div>
 <h2 id="voteTitle">Which reframe wins?</h2>
 <p id="voteDescription">Tap the funniest entry. You can't vote for your own post, and votes stay hidden until everyone has chosen.</p>
@@ -111,7 +111,7 @@
 
 <section id="screen-results" class="screen">
 <div class="card">
-<div class="roombar"><span class="pill" id="resultRoundPill">ROUND 1 / 5</span><span class="pill">THE REVEAL</span></div>
+<div class="roombar"><span class="pill" id="resultRoundPill">ROUND 1 / 4</span><span class="pill">THE REVEAL</span></div>
 <div class="kicker">Receipts were kept</div>
 <h2>Who cooked?</h2>
 <p>The votes are in. Here's how the room judged everyone's context crimes.</p>
@@ -807,7 +807,7 @@ setConnection("offline", "Access denied");
 say("Database access denied. Check the Firebase setup steps in the project README.");
 console.error(error);
 });
-setConnection("online", "Live");
+setConnection(firebaseConnected ? "online" : "offline", firebaseConnected ? "Live" : "Offline");
 void syncPresence();
 }
 async function syncPresence() {
@@ -1115,7 +1115,7 @@ localStorage.removeItem("is_room_code");
 $("endRoom").classList.add("hidden");
 $("leaveRoom").classList.add("hidden");
 hide("phaseRuntime"); hide("hostTimeoutPanel");
-showScreen("lobby"); setConnection("online", "Connected");
+showScreen("lobby"); setConnection(firebaseConnected ? "online" : "offline", firebaseConnected ? "Connected" : "Offline");
 }
 async function endRoom() {
 if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
@@ -1171,7 +1171,7 @@ $("waitMore").addEventListener("click", waitMoreTime);
 onAuthStateChanged(auth, async (user) => {
 if (user) {
 uid = user.uid;
-setConnection("online", "Connected");
+setConnection(firebaseConnected ? "online" : "offline", firebaseConnected ? "Connected" : "Offline");
 await tryResume();
 } else {
 setConnection("", "Signing in");
@@ -1180,8 +1180,8 @@ setConnection("", "Signing in");
 onValue(ref(db, ".info/serverTimeOffset"), snapshot => { serverTimeOffset = Number(snapshot.val() || 0); updatePhaseRuntime(); });
 onValue(ref(db, ".info/connected"), snapshot => {
 firebaseConnected = snapshot.val() === true;
-if (firebaseConnected) void syncPresence();
-else if (currentRoom) updatePhaseRuntime();
+if (firebaseConnected) { setConnection("online", currentCode ? "Live" : "Connected"); void syncPresence(); }
+else { setConnection("offline", "Offline"); if (currentRoom) updatePhaseRuntime(); }
 });
 setInterval(updatePhaseRuntime, 1000);
 signInAnonymously(auth).catch((error) => {
