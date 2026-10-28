@@ -656,6 +656,8 @@ finally { busy = false; if (currentRoom) renderRoom(); }
 async function nextRound() {
 if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
 busy = true; $("nextRound").disabled = true;
+const nextRoundNumber = Number(currentRoom.round || 1) + 1;
+const nextPhotoOptions = nextRoundNumber === 4 ? buildPhotoOptions(participantIds(currentRoom)) : {};
 try {
 await runTransaction(currentRoomRef, (room) => {
 if (!room || room.phase !== "results" || room.hostId !== uid) return;
@@ -663,8 +665,10 @@ if (Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS)) {
 room.phase = "finished";
 return room;
 }
-room.round = Number(room.round || 1) + 1;
-room.prompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+room.round = nextRoundNumber;
+room.themeId = (room.themeSequence || [])[room.round - 1] || "photo-sharing";
+room.prompt = THEME_BY_ID[room.themeId].role;
+room.photoOptions = nextPhotoOptions;
 room.phase = "answering";
 room.answers = {};
 room.assignments = {};
