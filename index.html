@@ -604,9 +604,12 @@
           room.round = 1;
           room.maxRounds = TOTAL_ROUNDS;
           room.participants = Object.keys(room.players);
+          room.themeSequence = themeSequence;
+          room.themeId = themeSequence[0];
           room.scores = {};
           Object.keys(room.players).forEach(id => { room.scores[id] = 0; });
-          room.prompt = prompt;
+          room.prompt = THEME_BY_ID[room.themeId].role;
+          room.photoOptions = {};
           room.answers = {};
           room.assignments = {};
           room.twists = {};
