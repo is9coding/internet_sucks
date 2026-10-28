@@ -27,6 +27,16 @@ Publish the **latest** `database.rules.json` from this repository in Firebase Co
 
 Also confirm Firebase Authentication → Sign-in method → **Anonymous** is enabled. Changes to this repository's rules file do not automatically publish the rules to Firebase; you must press **Publish** in the Firebase Console (or deploy with the Firebase CLI).
 
+## Round formats
+
+A match has four rounds. Rounds 1–3 randomly select three distinct themes from the nine text-based website parodies: Video Site, Social Media, Social Network, Web Forum, Job Network, Store, Crowdfunding, Check-in Site, and News Site. Round 4 is always the Photo Sharing Site finale.
+
+In rounds 1–3, each player writes the role shown for that theme. The assigned twister sees that text and answers the theme's framing prompt. The room votes on the combined entry.
+
+In Round 4, each player is shown two photos and picks one for their personal-feed post. The assigned twister writes a caption for that photo. Voting cards and results show the photo with the caption underneath.
+
+The photo cards are remote Unsplash images, so the finale needs an internet connection to display them.
+
 ## How to play
 
 - One player creates a room and shares its five-character code.
@@ -34,6 +44,10 @@ Also confirm Firebase Authentication → Sign-in method → **Anonymous** is ena
 - Each round: answer a prompt, reframe the next player's answer, then vote for the funniest reframe.
 - Players cannot vote for their own reframe. Each vote awards 100 points to the selected reframe's author.
 - Five rounds, then the final leaderboard.
+
+### Updated rules after the photo finale change
+
+The current `database.rules.json` now permits a final-round answer containing a `photoId` instead of text. Publish the latest file in Firebase Console → Realtime Database → Rules after updating the code. A GitHub commit does not automatically publish Realtime Database rules.
 
 ## Current MVP notes
 
