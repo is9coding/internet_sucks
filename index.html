@@ -391,15 +391,48 @@
       $("startGame").textContent = ids.length < 3 ? "Waiting for 3 players…" : "Start the chaos ↗";
     }
     function renderAnswering(room) {
+      const theme = themeFor(room);
       $("roundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
-      safeText($("promptTitle"), room.prompt || "A prompt is loading…");
+      safeText($("answerKicker"), "ROUND " + room.round + " · " + theme.name.toUpperCase());
+      safeText($("promptTitle"), theme.role);
+      safeText($("promptDescription"), room.themeId === "photo-sharing"
+        ? "Pick one of these two photos for your post. Someone else will write the caption."
+        : "Write something that fits this part of the internet. The next player will invent the context.");
       const answers = room.answers || {};
-      const submitted = Boolean(answers[uid]);
+      const answer = answers[uid] || null;
+      const submitted = answerSubmitted(room, uid);
+      const photoRound = room.themeId === "photo-sharing";
+      $("answerTextFields").classList.toggle("hidden", photoRound);
+      $("submitAnswer").classList.toggle("hidden", photoRound);
+      $("photoPicker").classList.toggle("hidden", !photoRound);
+      $("answerInput").placeholder = theme.placeholder || "Write your post…";
       $("answerInput").disabled = submitted || busy;
       $("submitAnswer").disabled = submitted || busy;
       $("submitAnswer").textContent = submitted ? "Answer locked ✓" : "Lock in answer";
+      if (photoRound) {
+        const picker = $("photoPicker");
+        picker.replaceChildren();
+        const options = (room.photoOptions && room.photoOptions[uid]) || PHOTO_LIBRARY.slice(0, 2).map(photo => photo.id);
+        options.forEach((photoId) => {
+          const photo = photoFor(photoId);
+          const choice = document.createElement("button");
+          choice.type = "button";
+          choice.className = "photo-choice" + (answer && answer.photoId === photoId ? " selected" : "");
+          choice.disabled = submitted || busy;
+          choice.setAttribute("aria-label", "Choose photo: " + photo.label);
+          appendPhoto(choice, photoId, "photo-thumb");
+          const label = document.createElement("span"); label.className = "photo-choice-title"; label.textContent = photo.label;
+          const cta = document.createElement("span"); cta.className = "photo-choice-cta";
+          cta.textContent = answer && answer.photoId === photoId ? "Selected ✓" : (submitted ? "Not selected" : "Use this photo");
+          choice.append(label, cta);
+          choice.addEventListener("click", () => submitPhotoChoice(photoId));
+          picker.append(choice);
+        });
+      }
       $("answerStatus").classList.toggle("hidden", !submitted);
-      if (submitted) $("answerStatus").textContent = "Locked in. Waiting for everyone else to answer…";
+      if (submitted) $("answerStatus").textContent = photoRound
+        ? "Photo selected. Waiting for everyone else to choose…"
+        : "Answer locked. Waiting for everyone else to answer…";
     }
     function renderRewriting(room) {
       $("rewriteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
