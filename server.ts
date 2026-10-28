@@ -161,6 +161,57 @@ function fallbackResult(input: AiTurnRequest, warning: string): AiTurnResult {
   return { text: lines[(botIndex + hashText(input.matchId + ":" + input.round)) % lines.length], fallback: true, warning };
 }
 
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "internet-sucks";
+const FIREBASE_DATABASE_URL = (process.env.FIREBASE_DATABASE_URL || "https://internet-sucks-default-rtdb.firebaseio.com").replace(/\/+$/, "");
+
+function decodeFirebaseUid(token: string): string | null {
+  try {
+    const pieces = token.split(".");
+    if (pieces.length !== 3) return null;
+    const claims = JSON.parse(Buffer.from(pieces[1], "base64url").toString("utf8")) as Record<string, unknown>;
+    if (claims.aud !== FIREBASE_PROJECT_ID ||
+        claims.iss !== "https://securetoken.google.com/" + FIREBASE_PROJECT_ID ||
+        typeof claims.exp !== "number" || claims.exp * 1000 <= Date.now()) return null;
+    const uid = typeof claims.user_id === "string" ? claims.user_id : claims.sub;
+    return typeof uid === "string" && uid.length > 0 && uid.length <= 128 ? uid : null;
+  } catch {
+    return null;
+  }
+}
+
+// The Realtime Database validates the ID token and applies the room's .read rule.
+// That proves this token belongs to a player in the requested room; we then require it to be the host.
+async function readRoomAsUser(roomCode: string, idToken: string): Promise<Record<string, any> | null> {
+  const url = FIREBASE_DATABASE_URL + "/rooms/" + encodeURIComponent(roomCode) + ".json?auth=" + encodeURIComponent(idToken);
+  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(6000) });
+  if (response.status === 401 || response.status === 403) return null;
+  if (!response.ok) throw new Error("Realtime Database room read returned " + response.status);
+  const room: unknown = await response.json();
+  return room && typeof room === "object" ? room as Record<string, any> : null;
+}
+
+function actionIsComplete(room: Record<string, any>, phase: Phase, aiPlayerId: string): boolean {
+  if (phase === "answering") {
+    const answer = room.answers && room.answers[aiPlayerId];
+    return Boolean(answer && (room.themeId === "photo-sharing" ? answer.photoId : answer.text));
+  }
+  if (phase === "rewriting") return Boolean(room.twists && room.twists[aiPlayerId] && room.twists[aiPlayerId].text);
+  return Boolean(room.votes && room.votes[aiPlayerId]);
+}
+
+function canServeAction(room: Record<string, any> | null, input: AiTurnRequest, requesterUid: string): boolean {
+  if (!room || room.mode !== "solo" || room.hostId !== requesterUid ||
+      room.matchId !== input.matchId || Number(room.round) !== input.round ||
+      room.phase !== input.phase || room.themeId !== input.themeId) return false;
+  const host = room.players && room.players[requesterUid];
+  const bot = room.players && room.players[input.aiPlayerId];
+  if (!host || host.online !== true || (typeof host.disconnectedAt === "number" && Number.isFinite(host.disconnectedAt))) return false;
+  if (!bot || bot.isAi !== true || bot.removed === true || !Array.isArray(room.participants) ||
+      !room.participants.includes(input.aiPlayerId)) return false;
+  if (typeof room.phaseDeadline !== "number" || room.phaseDeadline <= Date.now()) return false;
+  return !actionIsComplete(room, input.phase, input.aiPlayerId);
+}
+
 function parseRequest(raw: unknown): AiTurnRequest | null {
   if (!raw || typeof raw !== "object") return null;
   const body = raw as Record<string, unknown>;
@@ -173,57 +224,60 @@ function parseRequest(raw: unknown): AiTurnRequest | null {
   const phase = body.phase as Phase;
   const round = Number(body.round);
   if ((round === 4) !== (body.themeId === "photo-sharing")) return null;
-  const input: AiTurnRequest = {
+  return {
     roomCode: body.roomCode, matchId: body.matchId, round, phase,
     aiPlayerId: body.aiPlayerId, themeId: body.themeId
   };
+}
 
-  if (phase === "answering" && body.themeId === "photo-sharing") {
-    if (!Array.isArray(body.photoOptions) || body.photoOptions.length !== 2) return null;
-    const normalized = (body.photoOptions as unknown[]).map(item => {
-      if (!item || typeof item !== "object") return null;
-      const option = item as Record<string, unknown>;
-      if (typeof option.id !== "string" || !Object.hasOwn(PHOTOS, option.id)) return null;
-      return { id: option.id, label: PHOTOS[option.id] };
-    });
-    if (normalized.some(value => value === null) || normalized[0]!.id === normalized[1]!.id) return null;
-    input.photoOptions = normalized as Array<{ id: string; label: string }>;
+function deriveTrustedRequest(base: AiTurnRequest, room: Record<string, any>): AiTurnRequest | null {
+  if (room.themeId !== base.themeId) return null;
+  const input: AiTurnRequest = {
+    roomCode: base.roomCode, matchId: base.matchId, round: base.round,
+    phase: base.phase, aiPlayerId: base.aiPlayerId, themeId: room.themeId
+  };
+  const aiId = base.aiPlayerId;
+  if (base.phase === "answering" && room.themeId === "photo-sharing") {
+    const ids = room.photoOptions && room.photoOptions[aiId];
+    if (!Array.isArray(ids) || ids.length !== 2 ||
+        !Object.hasOwn(PHOTOS, ids[0]) || !Object.hasOwn(PHOTOS, ids[1]) || ids[0] === ids[1]) return null;
+    input.photoOptions = ids.map((id: string) => ({ id, label: PHOTOS[id] }));
   }
-
-  if (phase === "rewriting") {
-    if (!body.targetAnswer || typeof body.targetAnswer !== "object") return null;
-    const target = body.targetAnswer as Record<string, unknown>;
-    if (body.themeId === "photo-sharing") {
-      if (typeof target.photoId !== "string" || !Object.hasOwn(PHOTOS, target.photoId)) return null;
-      input.targetAnswer = { photoId: target.photoId, photoLabel: PHOTOS[target.photoId], skipped: target.skipped === true };
+  if (base.phase === "rewriting") {
+    const targetId = room.assignments && room.assignments[aiId];
+    const answer = targetId && room.answers && room.answers[targetId];
+    if (!answer) return null;
+    if (room.themeId === "photo-sharing") {
+      if (typeof answer.photoId !== "string" || !Object.hasOwn(PHOTOS, answer.photoId)) return null;
+      input.targetAnswer = { photoId: answer.photoId, photoLabel: PHOTOS[answer.photoId], skipped: answer.skipped === true };
     } else {
-      if (typeof target.text !== "string" || target.text.length < 1 || target.text.length > 240) return null;
-      input.targetAnswer = { text: target.text, skipped: target.skipped === true };
+      if (typeof answer.text !== "string" || answer.text.length < 1 || answer.text.length > 240) return null;
+      input.targetAnswer = { text: answer.text, skipped: answer.skipped === true };
     }
   }
-
-  if (phase === "voting") {
-    if (!Array.isArray(body.candidates) || body.candidates.length < 1 || body.candidates.length > 12) return null;
-    const normalized: Candidate[] = [];
-    const seen = new Set<string>();
-    for (const item of body.candidates as unknown[]) {
-      if (!item || typeof item !== "object") return null;
-      const candidate = item as Record<string, unknown>;
-      if (typeof candidate.authorId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(candidate.authorId)) return null;
-      if (candidate.authorId === input.aiPlayerId || seen.has(candidate.authorId)) return null;
-      if (typeof candidate.twistText !== "string" || candidate.twistText.length < 1 || candidate.twistText.length > 240) return null;
-      seen.add(candidate.authorId);
-      normalized.push({
-        authorId: candidate.authorId, twistText: candidate.twistText,
-        originalText: typeof candidate.originalText === "string" ? candidate.originalText.slice(0, 240) : "",
-        photoLabel: typeof candidate.photoLabel === "string" ? candidate.photoLabel.slice(0, 100) : ""
-      });
-    }
-    input.candidates = normalized;
+  if (base.phase === "voting") {
+    const twists = room.twists || {};
+    const assignments = room.assignments || {};
+    input.candidates = Object.keys(twists)
+      .filter(authorId => authorId !== aiId && !(twists[authorId] && twists[authorId].skipped))
+      .map(authorId => {
+        const targetId = assignments[authorId];
+        const answer = targetId && room.answers && room.answers[targetId] || {};
+        return {
+          authorId,
+          twistText: String(twists[authorId].text || "").slice(0, 240),
+          originalText: String(answer.text || "").slice(0, 240),
+          photoLabel: answer.photoId && PHOTOS[answer.photoId] ? PHOTOS[answer.photoId] : ""
+        };
+      })
+      .filter(candidate => /^[A-Za-z0-9_-]{1,128}$/.test(candidate.authorId) && candidate.twistText.length > 0);
+    if (!input.candidates.length) return { ...input, candidates: [] };
+    if (input.candidates.length > 12) return null;
   }
   return input;
 }
 
+function promptFor
 function promptFor(input: AiTurnRequest): { prompt: string; schema: Record<string, unknown> } {
   const persona = PERSONAS[input.aiPlayerId];
   const theme = THEMES[input.themeId];
@@ -269,6 +323,7 @@ function promptFor(input: AiTurnRequest): { prompt: string; schema: Record<strin
 }
 
 async function generateTurn(input: AiTurnRequest): Promise<AiTurnResult> {
+  if (input.phase === "voting" && (!input.candidates || input.candidates.length === 0)) return { chosenAuthorId: "__abstain__", fallback: true, warning: "No eligible entries to vote for." };
   if (!process.env.GEMINI_API_KEY) return fallbackResult(input, "Gemini API secret not configured; backup responses used.");
   const { prompt, schema } = promptFor(input);
   try {
@@ -317,18 +372,51 @@ app.post("/api/ai-turn", async (req: Request, res: Response, next: NextFunction)
     res.status(403).json({ error: "This AI endpoint accepts same-origin app requests only." });
     return;
   }
-  const input = parseRequest(req.body);
-  if (!input) {
+  const baseInput = parseRequest(req.body);
+  if (!baseInput) {
     res.status(400).json({ error: "Invalid AI turn request." });
     return;
   }
+  const authorization = req.get("authorization") || "";
+  const match = /^Bearer\s+(.+)$/i.exec(authorization);
+  const idToken = match && match[1];
+  const requesterUid = idToken ? decodeFirebaseUid(idToken) : null;
+  if (!idToken || !requesterUid) {
+    res.status(401).json({ error: "Your Firebase sign-in expired. Reload the game and try again." });
+    return;
+  }
+
+  let room: Record<string, any> | null;
+  try {
+    room = await readRoomAsUser(baseInput.roomCode, idToken);
+  } catch (error) {
+    console.warn("Could not validate room for AI request", error instanceof Error ? error.message : "Unknown database error");
+    res.status(503).json({ error: "Could not validate the room with Firebase. Please retry." });
+    return;
+  }
+  if (!room) {
+    res.status(403).json({ error: "This Firebase player cannot access that room." });
+    return;
+  }
+  if (!canServeAction(room, baseInput, requesterUid)) {
+    res.status(409).json({ error: "The room, phase, host connection, or AI action changed. Refreshing game state." });
+    return;
+  }
+  const input = deriveTrustedRequest(baseInput, room);
+  if (!input) {
+    res.status(409).json({ error: "The current game state does not have enough valid context for this AI action." });
+    return;
+  }
+
   const ip = req.ip || req.socket.remoteAddress || "unknown";
   pruneMaps();
-  if (!takeWindow(ipMinuteCounts, ip, MAX_PER_IP_MINUTE, 60_000) ||
-      !takeWindow(ipHourCounts, ip, MAX_PER_IP_HOUR, 60 * 60_000)) {
+  const ipMinuteAllowed = takeWindow(ipMinuteCounts, ip, MAX_PER_IP_MINUTE, 60_000);
+  const ipHourAllowed = takeWindow(ipHourCounts, ip, MAX_PER_IP_HOUR, 60 * 60_000);
+  if (!ipMinuteAllowed || !ipHourAllowed) {
     res.status(429).json({ error: "AI request limit reached. Please wait before trying again." });
     return;
   }
+
   const key = actionKey(input);
   const cached = completedActions.get(key);
   if (cached && cached.expiresAt > Date.now()) {
@@ -342,6 +430,7 @@ app.post("/api/ai-turn", async (req: Request, res: Response, next: NextFunction)
     res.json(await pending);
     return;
   }
+
   const matchKey = input.roomCode + ":" + input.matchId;
   let matchCounter = roomMatchCounts.get(matchKey);
   if (!matchCounter || matchCounter.expiresAt <= Date.now()) {
@@ -353,10 +442,17 @@ app.post("/api/ai-turn", async (req: Request, res: Response, next: NextFunction)
     return;
   }
   matchCounter.count += 1;
+
   const task = generateTurn(input);
   pendingActions.set(key, task);
   try {
     const result = await task;
+    // Re-read using the same user token so stale actions are not returned after a phase transition.
+    const latestRoom = await readRoomAsUser(baseInput.roomCode, idToken);
+    if (!canServeAction(latestRoom, baseInput, requesterUid)) {
+      res.status(409).json({ error: "The phase changed while the AI was thinking. No action was written." });
+      return;
+    }
     completedActions.set(key, { value: result, expiresAt: Date.now() + AI_TURN_CACHE_TTL_MS });
     res.setHeader("Cache-Control", "no-store");
     res.json(result);
@@ -366,6 +462,7 @@ app.post("/api/ai-turn", async (req: Request, res: Response, next: NextFunction)
     pendingActions.delete(key);
   }
 });
+
 
 app.get(["/", "/index.html"], (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
