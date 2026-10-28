@@ -17,7 +17,7 @@
         "answers": {
           "$player": {
             ".write": "auth != null && auth.uid === $player && root.child('rooms').child($room).child('phase').val() === 'answering' && !data.exists()",
-            ".validate": "newData.hasChildren(['text', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 240 && newData.child('createdAt').isNumber()"
+            ".validate": "newData.child('createdAt').isNumber() && ((newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 240 && root.child('rooms').child($room).child('themeId').val() !== 'photo-sharing') || (newData.child('photoId').isString() && newData.child('photoId').val().length > 0 && root.child('rooms').child($room).child('themeId').val() === 'photo-sharing'))"
           }
         },
         "twists": {
