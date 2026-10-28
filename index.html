@@ -47,6 +47,8 @@
 <label class="field-label" for="joinCode">ROOM CODE <span class="subtle">(leave blank to host)</span></label>
 <input id="joinCode" maxlength="5" autocapitalize="characters" autocomplete="off" placeholder="5 LETTERS / NUMBERS" style="text-transform:uppercase;letter-spacing:.16em">
 <button id="enterRoom" class="btn">Create a room <span aria-hidden="true">↗</span></button>
+<button id="startSolo" class="btn secondary" type="button" style="margin-top:10px">Play solo vs 2 AI players ✦</button>
+<p class="subtle" style="margin-top:8px;margin-bottom:0">Solo mode runs on the AI Studio-published version of this app.</p>
 <div id="lobbyError" class="status bad hidden" role="alert"></div>
 <p class="subtle" style="margin-top:14px;margin-bottom:0">Best with 3–8 friends · 4 rounds · no app download</p>
 </div>
@@ -266,7 +268,9 @@ container.append(img);
 return img;
 }
 function playerNameFor(room, id) {
-return (room.players && room.players[id] && room.players[id].name) || "Anonymous legend";
+const player = room.players && room.players[id];
+if (!player) return "Anonymous legend";
+return (player.name || "Anonymous legend") + (player.isAi ? " (AI)" : "");
 }
 function phaseName(phase) {
 return ({lobby:"Lobby", answering:"Answering", rewriting:"Reframing", voting:"Voting", results:"Results", finished:"Finished"})[phase] || "In game";
@@ -672,6 +676,7 @@ updatePhaseRuntime();
 if (room.hostId === uid) {
 void resumeHostAfterReconnect();
 void maybeAdvance();
+void maybeRunAiActions();
 }
 }
 async function resumeHostAfterReconnect() {
@@ -692,6 +697,154 @@ return room;
 }, { applyLocally: false });
 } catch (error) { console.warn("Could not resume host timer", error); }
 finally { phaseMutationBusy = false; }
+}
+const pendingAiActions = new Set();
+let aiFallbackNoticeShown = false;
+const AI_BOT_IDS = ["ai_bot_1", "ai_bot_2"];
+const AI_FALLBACK_LINES = {
+"video-site": ["I paused the tutorial to ask the comments how to use the pause button.", "This video changed my life; mostly because I watched it instead of doing laundry."],
+"social-media": ["A casual update from someone who has never once been casual.", "Posting this before my group chat can stage an intervention."],
+"social-network": ["Thrilled to announce I have confused a hobby with a professional qualification.", "Sharing this article because the headline agreed with me for nine seconds."],
+"web-forum": ["Have you tried turning your expectations off and on again?", "This is probably a simple fix, which is why I have written 19 paragraphs."],
+"job-network": ["My core competency is looking busy while a progress bar moves.", "Passionate about synergy, snacks, and accidentally replying all."],
+"store": ["Arrived exactly as described, which was not at all how I described it.", "Five stars for the packaging; the product is now a decorative object."],
+"crowdfunding": ["Help me reach my goal of making a problem everybody else's hobby.", "Early supporters will receive my deepest and most confusing gratitude."],
+"check-in-site": ["Great atmosphere, suspicious chairs, unforgettable exit strategy.", "Came for the ambience, stayed because I forgot where I parked."],
+"news-site": ["Sources confirm that I have read only the headline and have strong opinions.", "A developing story, unlike my ability to mind my own business."]
+};
+function isAiId(id) { return AI_BOT_IDS.includes(id); }
+function hashText(value) {
+let hash = 2166136261;
+for (let i = 0; i < value.length; i++) { hash ^= value.charCodeAt(i); hash = Math.imul(hash, 16777619); }
+return hash >>> 0;
+}
+function localAiFallback(room, aiId, phase, request) {
+const index = aiId === "ai_bot_1" ? 0 : 1;
+if (phase === "answering" && room.themeId === "photo-sharing") {
+const choices = (room.photoOptions && room.photoOptions[aiId]) || [];
+return { photoId: choices[index % Math.max(1, choices.length)] || choices[0] };
+}
+if (phase === "voting") {
+const candidates = request.candidates || [];
+return { chosenAuthorId: candidates.length ? candidates[hashText(room.matchId + aiId + room.round) % candidates.length].authorId : ABSTAIN_VOTE };
+}
+if (phase === "rewriting") {
+if (room.themeId === "photo-sharing") return { text: index === 0 ? "Proof that I can turn a perfectly normal Tuesday into a personal brand." : "I came, I saw, I made this everybody's problem." };
+const original = String((request.targetAnswer && request.targetAnswer.text) || "this post").replace(/\s+/g, " ").slice(0, 90);
+return { text: (index === 0 ? "Breaking: " : "A thread nobody requested: ") + original + (index === 0 ? " — the comments are investigating." : " — and somehow I am the expert.") };
+}
+const lines = AI_FALLBACK_LINES[room.themeId] || AI_FALLBACK_LINES["social-media"];
+return { text: lines[(index + hashText(room.matchId + String(room.round))) % lines.length] };
+}
+function aiRequestFor(room, aiId) {
+const request = {
+roomCode: currentCode,
+matchId: room.matchId,
+round: Number(room.round),
+phase: room.phase,
+aiPlayerId: aiId,
+themeId: room.themeId
+};
+if (room.phase === "answering" && room.themeId === "photo-sharing") {
+request.photoOptions = ((room.photoOptions && room.photoOptions[aiId]) || []).map(id => ({ id, label: photoFor(id).label }));
+}
+if (room.phase === "rewriting") {
+const targetId = room.assignments && room.assignments[aiId];
+const answer = targetId && room.answers && room.answers[targetId];
+if (answer) {
+request.targetAnswer = room.themeId === "photo-sharing"
+? { photoId: answer.photoId, photoLabel: photoFor(answer.photoId).label, skipped: Boolean(answer.skipped) }
+: { text: String(answer.text || "").slice(0, 240), skipped: Boolean(answer.skipped) };
+}
+}
+if (room.phase === "voting") {
+request.candidates = Object.keys(room.twists || {})
+.filter(authorId => authorId !== aiId && !(room.twists[authorId] && room.twists[authorId].skipped))
+.filter(authorId => !(room.players && room.players[authorId] && room.players[authorId].removed))
+.map(authorId => {
+const targetId = room.assignments && room.assignments[authorId];
+const answer = targetId && room.answers && room.answers[targetId] || {};
+return {
+authorId,
+twistText: String(room.twists[authorId].text || "").slice(0, 240),
+originalText: String(answer.text || "").slice(0, 240),
+photoLabel: answer.photoId ? photoFor(answer.photoId).label : ""
+};
+});
+}
+return request;
+}
+async function runOneAiAction(code, round, phase, aiId, request) {
+const key = [code, currentRoom && currentRoom.matchId, round, phase, aiId].join(":");
+if (pendingAiActions.has(key)) return;
+pendingAiActions.add(key);
+try {
+if (aiId === "ai_bot_2") await new Promise(resolve => setTimeout(resolve, 500));
+let result;
+try {
+const response = await fetch("/api/ai-turn", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify(request),
+signal: AbortSignal.timeout(10000)
+});
+const payload = await response.json().catch(() => ({}));
+if (!response.ok) throw new Error(payload.error || "AI service request failed");
+result = payload;
+if (payload.fallback && !aiFallbackNoticeShown) {
+aiFallbackNoticeShown = true;
+say("An AI quota or service limit was reached. Backup bot wit is keeping the match moving.");
+}
+} catch (error) {
+console.warn("AI backend unavailable; using local backup response", error);
+result = { ...localAiFallback(currentRoom || {}, aiId, phase, request), fallback: true };
+if (!aiFallbackNoticeShown) {
+aiFallbackNoticeShown = true;
+say("AI service isn't reachable yet. Backup bot wit is keeping the match moving.");
+}
+}
+if (!currentRoom || currentCode !== code || Number(currentRoom.round) !== Number(round) ||
+currentRoom.phase !== phase || currentRoom.hostId !== uid || hostIsPaused(currentRoom) ||
+!canPlayerAct(currentRoom, phase) || !isAiId(aiId) || phaseActionComplete(currentRoom, phase, aiId)) return;
+const bot = currentRoom.players && currentRoom.players[aiId];
+if (!bot || bot.removed === true) return;
+if (phase === "answering") {
+if (currentRoom.themeId === "photo-sharing") {
+const allowed = (currentRoom.photoOptions && currentRoom.photoOptions[aiId]) || [];
+if (!allowed.includes(result.photoId)) result = localAiFallback(currentRoom, aiId, phase, request);
+await set(ref(db, "rooms/" + code + "/answers/" + aiId), { photoId: result.photoId, createdAt: serverNow(), ...(result.fallback ? { skipped: false, aiFallback: true } : {}) });
+} else {
+const text = String(result.text || localAiFallback(currentRoom, aiId, phase, request).text).trim().slice(0, 240) || "The comments have no further questions.";
+await set(ref(db, "rooms/" + code + "/answers/" + aiId), { text, createdAt: serverNow(), ...(result.fallback ? { aiFallback: true } : {}) });
+}
+} else if (phase === "rewriting") {
+const text = String(result.text || localAiFallback(currentRoom, aiId, phase, request).text).trim().slice(0, 240) || "Context unavailable; imagination supplied.";
+await set(ref(db, "rooms/" + code + "/twists/" + aiId), { text, createdAt: serverNow(), ...(result.fallback ? { aiFallback: true } : {}) });
+} else if (phase === "voting") {
+const eligible = request.candidates.map(candidate => candidate.authorId);
+const chosen = eligible.includes(result.chosenAuthorId) ? result.chosenAuthorId : (eligible.length ? localAiFallback(currentRoom, aiId, phase, request).chosenAuthorId : ABSTAIN_VOTE);
+await set(ref(db, "rooms/" + code + "/votes/" + aiId), chosen);
+}
+} catch (error) {
+console.error("AI action could not be saved", error);
+} finally {
+pendingAiActions.delete(key);
+if (currentRoom && currentCode === code && currentRoom.phase === phase) {
+void maybeAdvance();
+}
+}
+}
+function maybeRunAiActions() {
+const room = currentRoom;
+if (!room || room.mode !== "solo" || room.hostId !== uid || busy || hostIsPaused(room) ||
+!isTimedPhase(room.phase) || !canPlayerAct(room, room.phase)) return;
+for (const aiId of activeParticipantIds(room).filter(isAiId)) {
+if (phaseActionComplete(room, room.phase, aiId)) continue;
+const request = aiRequestFor(room, aiId);
+if (room.phase === "rewriting" && !request.targetAnswer) continue;
+if (room.phase === "voting" && (!request.candidates || !request.candidates.length)) continue;
+void runOneAiAction(currentCode, Number(room.round), room.phase, aiId, request);
+}
 }
 async function maybeAdvance() {
 if (!currentRoomRef || !uid || !currentRoom || busy || phaseMutationBusy) return;
@@ -828,20 +981,60 @@ if (currentRoom && currentRoom.hostId === uid) await resumeHostAfterReconnect();
 console.warn("Could not refresh player presence", error);
 }
 }
-async function createRoom(name) {
+async function createRoom(name, { solo = false } = {}) {
 let code = null;
+const soloThemeSequence = solo
+? [...shuffled(THEMES.filter(theme => theme.id !== "photo-sharing").map(theme => theme.id)).slice(0, 3), "photo-sharing"]
+: [];
+const bots = [
+{id:"ai_bot_1", name:"Deadpan Dana", persona:"deadpan"},
+{id:"ai_bot_2", name:"Reply Guy 3000", persona:"chaotic"}
+];
+const matchId = "m_" + Math.random().toString(36).slice(2, 10) + "_" + Math.floor(serverNow()).toString(36);
 for (let i = 0; i < 6; i++) {
 const candidate = newCode();
 const candidateRef = ref(db, "rooms/" + candidate);
-const result = await runTransaction(candidateRef, (room) => {
+const result = await runTransaction(candidateRef, room => {
 if (room) return;
+const now = serverNow();
 const players = {};
-players[uid] = { name, joinedAt: serverNow(), online: true, removed: false, disconnectedAt: null };
-return {
-hostId: uid, phase: "lobby", round: 1, maxRounds: TOTAL_ROUNDS,
-createdAt: serverNow(), updatedAt: serverNow(), players, scores: { [uid]: 0 }, participants: null,
-prompt: null, answers: {}, assignments: {}, twists: {}, votes: {}, phaseStartedAt: null, phaseDeadline: null, phaseDurationMs: null
+players[uid] = { name, joinedAt: now, online: true, removed: false, disconnectedAt: null, isAi: false };
+if (solo) {
+bots.forEach(bot => {
+players[bot.id] = { name: bot.name, persona: bot.persona, joinedAt: now, online: true, removed: false, disconnectedAt: null, isAi: true };
+});
+}
+const playerIds = solo ? [uid, ...bots.map(bot => bot.id)] : null;
+const newRoom = {
+hostId: uid,
+phase: "lobby",
+mode: solo ? "solo" : "multiplayer",
+round: 1,
+maxRounds: TOTAL_ROUNDS,
+matchId: solo ? matchId : null,
+createdAt: now,
+updatedAt: now,
+players,
+scores: Object.fromEntries((playerIds || [uid]).map(id => [id, 0])),
+participants: playerIds,
+prompt: null,
+themeSequence: soloThemeSequence,
+themeId: solo ? soloThemeSequence[0] : null,
+photoOptions: {},
+answers: {},
+assignments: {},
+twists: {},
+votes: {},
+voteTally: {},
+phaseStartedAt: null,
+phaseDeadline: null,
+phaseDurationMs: null
 };
+if (solo) {
+newRoom.prompt = THEME_BY_ID[newRoom.themeId].role;
+beginTimedPhase(newRoom, "answering");
+}
+return newRoom;
 }, { applyLocally: false });
 if (result.committed) { code = candidate; break; }
 }
@@ -873,6 +1066,35 @@ await set(playerRef, { ...old, name, online: true, removed: false, joinedAt: old
 localStorage.setItem("is_player_name", name);
 attachRoom(code);
 return code;
+}
+async function enterSoloRoom() {
+if (busy) return;
+clearError("lobbyError");
+if (!uid) {
+showError("lobbyError", "Still connecting to Firebase. Try again in a moment.");
+return;
+}
+const name = $("playerName").value.trim().replace(/\s+/g, " ");
+if (!name) { showError("lobbyError", "Pick a nickname first."); return; }
+if (name.length > 18) { showError("lobbyError", "Keep your nickname under 18 characters."); return; }
+if ($("joinCode").value.trim()) {
+showError("lobbyError", "Clear the room code to start a solo match.");
+return;
+}
+busy = true;
+$("startSolo").disabled = true;
+$("startSolo").textContent = "Setting up your AI opponents…";
+try {
+await createRoom(name, { solo: true });
+say("Solo match ready. Your AI opponents are joining the chaos.");
+} catch (error) {
+console.error("Solo room creation failed", error);
+showError("lobbyError", error && error.message ? error.message : "Couldn't start Solo Mode. Check Firebase and AI Studio setup.");
+} finally {
+busy = false;
+$("startSolo").disabled = false;
+$("startSolo").textContent = "Play solo vs 2 AI players ✦";
+}
 }
 async function enterRoom() {
 if (busy) return;
@@ -907,12 +1129,15 @@ if (eligible.length < 3) { say("Invite at least 3 active, online players to star
 busy = true;
 $("startGame").disabled = true;
 const themeSequence = [...shuffled(THEMES.filter(theme => theme.id !== "photo-sharing").map(theme => theme.id)).slice(0, 3), "photo-sharing"];
+const matchId = "m_" + Math.random().toString(36).slice(2, 10) + "_" + Math.floor(serverNow()).toString(36);
 try {
 const result = await runTransaction(currentRoomRef, room => {
 if (!room || room.phase !== "lobby" || room.hostId !== uid || hostIsPaused(room)) return;
 const ids = Object.keys(room.players || {}).filter(id => room.players[id].online !== false && room.players[id].removed !== true);
 if (ids.length < 3) return;
 room.participants = ids;
+room.matchId = matchId;
+room.mode = room.mode || "multiplayer";
 room.themeSequence = themeSequence;
 room.themeId = themeSequence[0];
 room.maxRounds = TOTAL_ROUNDS;
@@ -1182,6 +1407,7 @@ setConnection(firebaseConnected ? "online" : "offline", firebaseConnected ? "Con
 }
 
 $("enterRoom").addEventListener("click", enterRoom);
+$("startSolo").addEventListener("click", enterSoloRoom);
 $("playerName").addEventListener("keydown", e => { if (e.key === "Enter") $("joinCode").focus(); });
 $("joinCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0,5); });
 $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") enterRoom(); });
