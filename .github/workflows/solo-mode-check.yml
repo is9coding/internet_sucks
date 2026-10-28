@@ -1,0 +1,45 @@
+name: Validate Internet Sucks Solo Mode prototype
+
+on:
+  push:
+    branches: ["solo-mode-ai-starter"]
+  pull_request:
+    branches: ["solo-mode-ai-starter"]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm install
+      - name: Type-check AI backend
+        run: npm run typecheck
+      - name: Check game JavaScript syntax and DOM IDs
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("index.html").read_text(encoding="utf-8")
+          match = re.search(r'<script type="module">(.*?)</script>', html, re.S)
+          if not match:
+              raise SystemExit("Module script not found")
+          Path("/tmp/internet-sucks-check.mjs").write_text(match.group(1), encoding="utf-8")
+          ids = set(re.findall(r'\bid="([^"]+)"', html))
+          refs = set(re.findall(r'\$\("([^"]+)"\)', html))
+          missing = sorted(refs - ids)
+          if missing:
+              raise SystemExit("Missing DOM IDs: " + ", ".join(missing))
+          PY
+          node --check /tmp/internet-sucks-check.mjs
+      - name: Validate Firebase rules JSON
+        run: python -m json.tool database.rules.json > /dev/null
