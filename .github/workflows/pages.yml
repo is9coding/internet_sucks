@@ -23,6 +23,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Check game JavaScript syntax
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("index.html").read_text(encoding="utf-8")
+          match = re.search(r'<script type="module">(.*?)</script>', html, re.S)
+          if not match:
+              raise SystemExit("Module script not found")
+          Path("/tmp/internet-sucks-check.mjs").write_text(match.group(1), encoding="utf-8")
+          PY
+          node --check /tmp/internet-sucks-check.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website
