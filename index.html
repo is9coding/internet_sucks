@@ -90,8 +90,8 @@
 <div class="card">
 <div class="roombar"><span class="pill" id="voteRoundPill">ROUND 1 / 5</span><span class="pill">03 · VOTE</span></div>
 <div class="kicker">The group chat is the jury</div>
-<h2>Which reframe wins?</h2>
-<p>Tap the funniest entry. You can't vote for your own post, and votes stay hidden until everyone has chosen.</p>
+<h2 id="voteTitle">Which reframe wins?</h2>
+<p id="voteDescription">Tap the funniest entry. You can't vote for your own post, and votes stay hidden until everyone has chosen.</p>
 <div id="votingCards"></div>
 <div id="voteStatus" class="status hidden" aria-live="polite"></div>
 </div>
@@ -375,6 +375,9 @@ $("rewriteStatus").classList.toggle("hidden", !submitted);
 if (submitted) $("rewriteStatus").textContent = "Posted. The jury is assembling…";
 }
 function renderVoting(room) {
+const finalRound = room.themeId === "photo-sharing";
+safeText($("voteTitle"), finalRound ? "Which caption wins?" : "Which reframe wins?");
+safeText($("voteDescription"), finalRound ? "Vote for the funniest photo-and-caption post. Your vote stays hidden until the jury is done." : "Tap the funniest entry. You can't vote for your own post, and votes stay hidden until everyone has chosen.");
 $("voteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
 const ownVote = (room.votes || {})[uid];
 const signature = JSON.stringify([room.twists || {}, room.answers || {}, ownVote || null]);
