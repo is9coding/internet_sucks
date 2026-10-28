@@ -596,7 +596,7 @@
       if (ids.length < 3) { say("Invite at least 3 players to start."); return; }
       busy = true;
       $("startGame").disabled = true;
-      const prompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+      const themeSequence = [...shuffled(THEMES.filter(theme => theme.id !== "photo-sharing").map(theme => theme.id)).slice(0, 3), "photo-sharing"];
       try {
         await runTransaction(currentRoomRef, (room) => {
           if (!room || room.phase !== "lobby" || room.hostId !== uid || Object.keys(room.players || {}).length < 3) return;
