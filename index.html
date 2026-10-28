@@ -544,7 +544,7 @@
       const participants = participantIds(current);
       if (!participants.length) return;
       let shouldTry = false;
-      if (current.phase === "answering") shouldTry = participants.every(id => current.answers && current.answers[id] && current.answers[id].text);
+      if (current.phase === "answering") shouldTry = participants.every(id => answerSubmitted(current, id));
       if (current.phase === "rewriting") shouldTry = participants.every(id => current.twists && current.twists[id] && current.twists[id].text);
       if (current.phase === "voting") shouldTry = participants.every(id => current.votes && current.votes[id]);
       if (!shouldTry) return;
@@ -552,7 +552,7 @@
         await runTransaction(currentRoomRef, (room) => {
           if (!room || !Array.isArray(room.participants)) return;
           const ids = room.participants;
-          if (room.phase === "answering" && ids.every(id => room.answers && room.answers[id] && room.answers[id].text)) {
+          if (room.phase === "answering" && ids.every(id => answerSubmitted(room, id))) {
             const assignments = {};
             ids.forEach((id, i) => { assignments[id] = ids[(i + 1) % ids.length]; });
             room.phase = "rewriting";
