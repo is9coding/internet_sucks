@@ -43,7 +43,7 @@ The photo cards are remote Unsplash images, so the finale needs an internet conn
 - At least three players are required; rooms support up to 12.
 - Each round: answer a prompt, reframe the next player's answer, then vote for the funniest reframe.
 - Players cannot vote for their own reframe. Each vote awards 100 points to the selected reframe's author.
-- Five rounds, then the final leaderboard.
+- Four rounds, then the final leaderboard.
 
 ### Updated rules after the photo finale change
 
@@ -52,7 +52,10 @@ The current `database.rules.json` now permits a final-round answer containing a 
 ## Current MVP notes
 
 - Mobile-friendly single-page HTML app; no build step is required.
-- The room host advances phases via Firebase transactions when everyone has submitted.
-- Anonymous sign-in is used so friends don't need accounts.
-- Active game rooms are stored in Realtime Database. The MVP doesn't have a moderation queue, persistent match history, or server-side anti-cheat beyond database rules.
-- Use a new room for a new match; room cleanup/expiration is a future improvement.
+- The host controls timeout outcomes: wait 60 seconds, skip one missing action, or remove that player from the current match. There is no automatic skip.
+- Answer and reframe phases default to 120 seconds; voting defaults to 60 seconds. The timer is stored in shared room state and can be extended by the host.
+- When the original host disconnects, active phases pause. The original host must reconnect with the same anonymous Firebase identity to resume; hosting is not transferred.
+- Players can leave a room. Removed/departed players' current-round records are preserved, unfinished work is resolved as a placeholder/skip/abstention, and they are excluded from future rounds until they rejoin the lobby.
+- Phase transitions and scoring are applied in Firebase transactions to avoid duplicate score awards. Database Rules reject duplicate submissions, late client submissions, votes for skipped entries, and submissions while the host is offline.
+- The app is still a static browser client, not a trusted game server. Firebase Rules restrict client writes, but a full adversarial anti-cheat/authoritative scheduler would require trusted server-side functions.
+- Rooms still need host/participant activity to progress and do not yet have server-side automatic expiry/cleanup.
