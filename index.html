@@ -207,6 +207,7 @@ let toastTimer = null;
 let serverTimeOffset = 0;
 let firebaseConnected = false;
 let phaseMutationBusy = false;
+let timeoutPanelSignature = "";
 
 const $ = (id) => document.getElementById(id);
 const serverNow = () => Date.now() + serverTimeOffset;
@@ -392,6 +393,9 @@ safeText($("phaseRuntimeMessage"), "Time expired. Waiting for the host to decide
 if (room.hostId === uid) {
 show("hostTimeoutPanel");
 const list = $("timeoutMissing");
+const panelSignature = JSON.stringify([room.round, room.phase, missing.map(id => [id, playerNameFor(room, id)])]);
+if (panelSignature !== timeoutPanelSignature) {
+timeoutPanelSignature = panelSignature;
 list.replaceChildren();
 missing.forEach(id => {
 const row = document.createElement("div");
@@ -417,6 +421,7 @@ if (id !== uid) actions.append(removePlayer);
 actions.append(skip);
 row.append(person, actions); list.append(row);
 });
+}
 $("waitMore").disabled = busy || phaseMutationBusy;
 } else {
 hide("hostTimeoutPanel");
