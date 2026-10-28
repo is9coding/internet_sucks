@@ -35,6 +35,20 @@ jobs:
           Path("/tmp/internet-sucks-check.mjs").write_text(match.group(1), encoding="utf-8")
           PY
           node --check /tmp/internet-sucks-check.mjs
+      - name: Validate Firebase rules JSON
+        run: python -m json.tool database.rules.json > /dev/null
+      - name: Sanity-check game flow configuration
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          html = Path("index.html").read_text(encoding="utf-8")
+          readme = Path("README.md").read_text(encoding="utf-8")
+          for required in ('const TOTAL_ROUNDS = 4;', 'const PHASE_TIMEOUTS = { answering: 120000, rewriting: 120000, voting: 60000 };', 'function handleTimeoutAction', 'async function resumeHostAfterReconnect'):
+              if required not in html:
+                  raise SystemExit(f"Missing required game-flow code: {required}")
+          if "Five rounds, then the final leaderboard." in readme:
+              raise SystemExit("README still advertises five rounds")
+          PY
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website
