@@ -1144,19 +1144,37 @@ $("endRoom").disabled = false;
 }
 async function tryResume() {
 $("playerName").value = localStorage.getItem("is_player_name") || "";
-// Always reset client-side room state on a fresh page load.
-// Keep only the player's display name; never auto-attach to a previous room.
+// A BFCache restore is treated as an explicit return home, so do not leave stale presence behind.
+const oldCode = currentCode;
+const oldRoom = currentRoom;
 if (roomListener) { roomListener(); roomListener = null; }
+if (oldCode && uid && oldRoom && oldRoom.players && oldRoom.players[uid]) {
+const playerRef = ref(db, "rooms/" + oldCode + "/players/" + uid);
+try {
+if (oldRoom.hostId === uid) {
+await update(playerRef, { online: false, disconnectedAt: ServerValue.TIMESTAMP });
+} else if (oldRoom.phase === "lobby") {
+await onDisconnect(playerRef).cancel().catch(() => {});
+await set(playerRef, null);
+} else {
+await update(playerRef, { removed: true, online: false, departedAt: serverNow() });
+}
+await onDisconnect(playerRef).cancel().catch(() => {});
+} catch (error) {
+console.warn("Could not clean up room presence while returning home", error);
+}
+}
 currentCode = null;
 currentRoomRef = null;
 currentRoom = null;
 lastPhase = "";
 lastVoteSignature = "";
+timeoutPanelSignature = "";
 localStorage.removeItem("is_room_code");
 $("leaveRoom").classList.add("hidden");
 hide("phaseRuntime"); hide("hostTimeoutPanel");
 showScreen("lobby");
-setConnection("online", "Connected");
+setConnection(firebaseConnected ? "online" : "offline", firebaseConnected ? "Connected" : "Offline");
 }
 
 $("enterRoom").addEventListener("click", enterRoom);
