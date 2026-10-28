@@ -436,9 +436,16 @@
     }
     function renderRewriting(room) {
       $("rewriteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
+      const theme = themeFor(room);
+      safeText($("rewriteTitle"), theme.frame);
+      safeText($("rewriteKicker"), "ROUND " + room.round + " · " + theme.name.toUpperCase());
+      safeText($("rewriteLabel"), room.themeId === "photo-sharing" ? "THE POST CAPTION" : "THE INTERNET'S VERSION");
+      $("rewriteInput").placeholder = theme.placeholder || "Add your context…";
       const targetId = (room.assignments || {})[uid];
       const answer = targetId && room.answers && room.answers[targetId];
-      safeText($("answerToReframe"), answer ? "“" + answer.text + "”" : "Your answer is being assigned…");
+      $("answerToReframe").replaceChildren();
+      if (answer && room.themeId === "photo-sharing") appendPhoto($("answerToReframe"), answer.photoId);
+      else safeText($("answerToReframe"), answer ? "“" + (answer.text || "") + "”" : "Your post is being assigned…");
       const submitted = Boolean((room.twists || {})[uid]);
       $("rewriteInput").disabled = submitted || busy;
       $("submitRewrite").disabled = submitted || busy || !answer;
