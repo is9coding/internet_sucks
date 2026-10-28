@@ -13,8 +13,19 @@
 <header class="topbar">
 <div class="brand"><div class="logo" aria-hidden="true">!</div><div>INTERNET SUCKS<small>the context is cooked</small></div></div>
 <button id="endRoom" class="btn ghost hidden" type="button" style="width:auto;min-height:36px;padding:8px 12px;font-size:12px;color:var(--danger)" title="End this room for everyone">End room ↩</button>
+<button id="leaveRoom" class="btn ghost hidden" type="button" style="width:auto;min-height:36px;padding:8px 12px;font-size:12px" title="Leave this room">Leave room</button>
 <div class="connection" title="Realtime database connection"><span id="connectionDot" class="dot"></span><span id="connectionLabel">Connecting</span></div>
 </header>
+
+<div id="phaseRuntime" class="card hidden" aria-live="polite" style="margin-top:-6px">
+<div class="roombar"><div><div class="kicker" id="phaseRuntimeKicker">ROUND CONTROL</div><h3 id="phaseRuntimeTitle">Phase timer</h3></div><span class="pill" id="phaseClock">--:--</span></div>
+<div id="phaseRuntimeMessage" class="status">Waiting for the room…</div>
+<div id="hostTimeoutPanel" class="hidden" style="margin-top:12px">
+<div class="status bad" style="margin-top:0">Time expired. Choose how to handle each missing action. The game will not skip anyone automatically.</div>
+<div id="timeoutMissing"></div>
+<button id="waitMore" class="btn secondary" type="button">Wait +60 seconds</button>
+</div>
+</div>
 
 <section id="screen-lobby" class="screen active">
 <div class="hero">
@@ -133,7 +144,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, get, set, update, onValue, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, get, set, update, onValue, runTransaction, onDisconnect, ServerValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // This is the web app configuration already associated with this project.
 const firebaseConfig = {
@@ -177,6 +188,9 @@ const PHOTO_LIBRARY = [
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const MAX_PLAYERS = 12;
 const TOTAL_ROUNDS = 4;
+const PHASE_TIMEOUTS = { answering: 120000, rewriting: 120000, voting: 60000 };
+const TIMEOUT_EXTENSION = 60000;
+const ABSTAIN_VOTE = "__abstain__";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -190,8 +204,12 @@ let lastPhase = "";
 let lastVoteSignature = "";
 let busy = false;
 let toastTimer = null;
+let serverTimeOffset = 0;
+let firebaseConnected = false;
+let phaseMutationBusy = false;
 
 const $ = (id) => document.getElementById(id);
+const serverNow = () => Date.now() + serverTimeOffset;
 const show = (id) => $(id).classList.remove("hidden");
 const hide = (id) => $(id).classList.add("hidden");
 const setConnection = (state, label) => {
@@ -253,7 +271,154 @@ function phaseName(phase) {
 return ({lobby:"Lobby", answering:"Answering", rewriting:"Reframing", voting:"Voting", results:"Results", finished:"Finished"})[phase] || "In game";
 }
 function participantIds(room) {
-return Array.isArray(room.participants) ? room.participants : Object.keys(room.players || {});
+return Array.isArray(room && room.participants) ? room.participants : Object.keys((room && room.players) || {});
+}
+function activeParticipantIds(room) {
+return participantIds(room).filter(id => {
+const player = room && room.players && room.players[id];
+return Boolean(player && player.removed !== true);
+});
+}
+function hostIsPaused(room) {
+if (!room || !room.hostId) return false;
+const host = room.players && room.players[room.hostId];
+if (!host || host.online === false) return true;
+return typeof host.disconnectedAt === "number" && Number.isFinite(host.disconnectedAt);
+}
+function isTimedPhase(phase) { return Object.prototype.hasOwnProperty.call(PHASE_TIMEOUTS, phase); }
+function beginTimedPhase(room, phase) {
+room.phase = phase;
+if (isTimedPhase(phase)) {
+const duration = PHASE_TIMEOUTS[phase];
+room.phaseStartedAt = serverNow();
+room.phaseDurationMs = duration;
+room.phaseDeadline = room.phaseStartedAt + duration;
+} else {
+room.phaseStartedAt = null;
+room.phaseDurationMs = null;
+room.phaseDeadline = null;
+}
+}
+function phaseActionComplete(room, phase, id) {
+if (phase === "answering") return answerSubmitted(room, id);
+if (phase === "rewriting") return Boolean(room.twists && room.twists[id] && room.twists[id].text);
+if (phase === "voting") return Boolean(room.votes && room.votes[id]);
+return true;
+}
+function missingActions(room) {
+if (!room || !isTimedPhase(room.phase)) return [];
+return activeParticipantIds(room).filter(id => !phaseActionComplete(room, room.phase, id));
+}
+function phaseLabel(phase) {
+return ({answering:"Answer", rewriting:"Reframe", voting:"Vote"})[phase] || phaseName(phase);
+}
+function formatRemaining(ms) {
+const total = Math.max(0, Math.ceil(ms / 1000));
+return String(Math.floor(total / 60)).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
+}
+function canPlayerAct(room, phase) {
+return Boolean(room && room.phase === phase && !hostIsPaused(room) &&
+typeof room.phaseDeadline === "number" && serverNow() < room.phaseDeadline &&
+!(room.players && room.players[uid] && room.players[uid].removed === true));
+}
+function resolveMissingActionInRoom(room, id, phase) {
+if (phase === "answering" && !answerSubmitted(room, id)) {
+if (room.themeId === "photo-sharing") {
+const choices = room.photoOptions && room.photoOptions[id];
+room.answers = room.answers || {};
+room.answers[id] = { photoId: (choices && choices[0]) || PHOTO_LIBRARY[0].id, skipped: true, createdAt: serverNow() };
+} else {
+room.answers = room.answers || {};
+room.answers[id] = { text: "[No answer submitted]", skipped: true, createdAt: serverNow() };
+}
+return true;
+}
+if (phase === "rewriting" && !(room.twists && room.twists[id] && room.twists[id].text)) {
+room.twists = room.twists || {};
+room.twists[id] = { text: "[Skipped — no reframe submitted]", skipped: true, createdAt: serverNow() };
+return true;
+}
+if (phase === "voting" && !(room.votes && room.votes[id])) {
+room.votes = room.votes || {};
+room.votes[id] = ABSTAIN_VOTE;
+return true;
+}
+return false;
+}
+function updatePhaseRuntime() {
+const room = currentRoom;
+const box = $("phaseRuntime");
+if (!box) return;
+if (!room || !isTimedPhase(room.phase)) {
+hide("phaseRuntime");
+hide("hostTimeoutPanel");
+return;
+}
+show("phaseRuntime");
+safeText($("phaseRuntimeKicker"), "ROUND " + (room.round || 1) + " · " + phaseLabel(room.phase).toUpperCase());
+safeText($("phaseRuntimeTitle"), phaseLabel(room.phase) + " phase");
+const paused = hostIsPaused(room);
+const host = room.players && room.players[room.hostId];
+let deadline = typeof room.phaseDeadline === "number" ? room.phaseDeadline : serverNow();
+let remaining;
+if (paused && host && typeof host.disconnectedAt === "number") remaining = deadline - host.disconnectedAt;
+else remaining = deadline - serverNow();
+$("phaseClock").textContent = formatRemaining(remaining);
+if (paused) {
+safeText($("phaseRuntimeMessage"), host && host.online === false
+? "Game paused because the original host disconnected. The timer and all game actions are paused."
+: "The original host has reconnected. Restoring the shared timer before play resumes…");
+hide("hostTimeoutPanel");
+return;
+}
+if (!room.phaseDeadline) {
+safeText($("phaseRuntimeMessage"), "The host is setting up this phase timer…");
+hide("hostTimeoutPanel");
+return;
+}
+if (remaining > 0) {
+safeText($("phaseRuntimeMessage"), "Everyone has the same deadline. You can take your time; the host can extend it if needed.");
+hide("hostTimeoutPanel");
+return;
+}
+const missing = missingActions(room);
+if (!missing.length) {
+safeText($("phaseRuntimeMessage"), "Time is up, but all required actions are in. The game is advancing…");
+hide("hostTimeoutPanel");
+return;
+}
+safeText($("phaseRuntimeMessage"), "Time expired. Waiting for the host to decide how to handle " + missing.length + " missing action(s).");
+if (room.hostId === uid) {
+show("hostTimeoutPanel");
+const list = $("timeoutMissing");
+list.replaceChildren();
+missing.forEach(id => {
+const row = document.createElement("div");
+row.className = "status";
+row.style.display = "flex";
+row.style.alignItems = "center";
+row.style.justifyContent = "space-between";
+row.style.gap = "10px";
+row.style.flexWrap = "wrap";
+const person = document.createElement("span");
+person.textContent = playerNameFor(room, id) + " — no " + phaseLabel(room.phase).toLowerCase() + " yet";
+const actions = document.createElement("span");
+actions.style.display = "flex"; actions.style.gap = "6px"; actions.style.flexWrap = "wrap";
+const skip = document.createElement("button");
+skip.type = "button"; skip.className = "btn secondary"; skip.style.width = "auto"; skip.style.minHeight = "36px"; skip.style.padding = "8px 10px";
+skip.textContent = "Skip";
+skip.addEventListener("click", () => handleTimeoutAction(id, "skip"));
+const removePlayer = document.createElement("button");
+removePlayer.type = "button"; removePlayer.className = "btn ghost"; removePlayer.style.width = "auto"; removePlayer.style.minHeight = "36px"; removePlayer.style.padding = "8px 10px"; removePlayer.style.color = "var(--danger)";
+removePlayer.textContent = "Remove";
+removePlayer.addEventListener("click", () => handleTimeoutAction(id, "remove"));
+actions.append(skip, removePlayer);
+row.append(person, actions); list.append(row);
+});
+$("waitMore").disabled = busy || phaseMutationBusy;
+} else {
+hide("hostTimeoutPanel");
+}
 }
 function addPlayerRow(list, name, subtitle, trailing, index) {
 const li = document.createElement("li");
@@ -297,19 +462,22 @@ function renderLobby(room) {
 $("roomCodeDisplay").textContent = currentCode || "-----";
 const players = room.players || {};
 const ids = Object.keys(players);
+const activeOnlineIds = ids.filter(id => players[id].online !== false && players[id].removed !== true);
 $("waitingPlayers").replaceChildren();
 ids.sort((a,b) => (players[a].joinedAt || 0) - (players[b].joinedAt || 0));
 ids.forEach((id, i) => {
 const isHost = id === room.hostId;
-addPlayerRow($("waitingPlayers"), players[id].name || "Player", id === uid ? "That's you" : (players[id].online === false ? "Reconnecting…" : "Ready to play"), isHost ? "HOST" : "PLAYER", i);
+const player = players[id];
+const status = player.removed ? "Removed — rejoin to play next match" : (id === uid ? "That's you" : (player.online === false ? "Offline" : "Ready to play"));
+addPlayerRow($("waitingPlayers"), player.name || "Player", status, isHost ? "HOST" : (player.removed ? "OUT" : (player.online === false ? "OFFLINE" : "PLAYER")), i);
 });
 const isHost = room.hostId === uid;
 $("hostNotice").textContent = isHost
-? (ids.length < 3 ? "You're hosting. Invite at least " + (3 - ids.length) + " more friend(s) to start." : "You're hosting. Everyone's here — start whenever.")
-: "The host will start the game once at least 3 players have joined.";
+? (activeOnlineIds.length < 3 ? "You're hosting. Invite at least " + (3 - activeOnlineIds.length) + " active player(s) to start." : "You're hosting. Everyone's here — start whenever.")
+: "The host will start the game once at least 3 active players are online.";
 $("startGame").classList.toggle("hidden", !isHost);
-$("startGame").disabled = ids.length < 3 || busy;
-$("startGame").textContent = ids.length < 3 ? "Waiting for 3 players…" : "Start the chaos ↗";
+$("startGame").disabled = activeOnlineIds.length < 3 || busy;
+$("startGame").textContent = activeOnlineIds.length < 3 ? "Waiting for 3 active players…" : "Start the chaos ↗";
 }
 function renderAnswering(room) {
 const theme = themeFor(room);
@@ -322,13 +490,14 @@ safeText($("promptDescription"), room.themeId === "photo-sharing"
 const answers = room.answers || {};
 const answer = answers[uid] || null;
 const submitted = answerSubmitted(room, uid);
+const phaseOpen = canPlayerAct(room, "answering");
 const photoRound = room.themeId === "photo-sharing";
 $("answerTextFields").classList.toggle("hidden", photoRound);
 $("submitAnswer").classList.toggle("hidden", photoRound);
 $("photoPicker").classList.toggle("hidden", !photoRound);
 $("answerInput").placeholder = theme.placeholder || "Write your post…";
-$("answerInput").disabled = submitted || busy;
-$("submitAnswer").disabled = submitted || busy;
+$("answerInput").disabled = submitted || busy || !phaseOpen;
+$("submitAnswer").disabled = submitted || busy || !phaseOpen;
 $("submitAnswer").textContent = submitted ? "Answer locked ✓" : "Lock in answer";
 if (photoRound) {
 const picker = $("photoPicker");
@@ -339,7 +508,7 @@ const photo = photoFor(photoId);
 const choice = document.createElement("button");
 choice.type = "button";
 choice.className = "photo-choice" + (answer && answer.photoId === photoId ? " selected" : "");
-choice.disabled = submitted || busy;
+choice.disabled = submitted || busy || !phaseOpen;
 choice.setAttribute("aria-label", "Choose photo: " + photo.label);
 appendPhoto(choice, photoId, "photo-thumb");
 const label = document.createElement("span"); label.className = "photo-choice-title"; label.textContent = photo.label;
@@ -369,8 +538,9 @@ $("answerToReframe").replaceChildren();
 if (answer && room.themeId === "photo-sharing") appendPhoto($("answerToReframe"), answer.photoId);
 else safeText($("answerToReframe"), answer ? "“" + (answer.text || "") + "”" : "Your post is being assigned…");
 const submitted = Boolean((room.twists || {})[uid]);
-$("rewriteInput").disabled = submitted || busy;
-$("submitRewrite").disabled = submitted || busy || !answer;
+const phaseOpen = canPlayerAct(room, "rewriting");
+$("rewriteInput").disabled = submitted || busy || !phaseOpen;
+$("submitRewrite").disabled = submitted || busy || !phaseOpen || !answer;
 $("submitRewrite").textContent = submitted ? "Post published ✓" : (room.themeId === "photo-sharing" ? "Publish caption" : "Publish your framing");
 $("rewriteStatus").classList.toggle("hidden", !submitted);
 if (submitted) $("rewriteStatus").textContent = "Posted. The jury is assembling…";
@@ -381,6 +551,7 @@ safeText($("voteTitle"), finalRound ? "Which caption wins?" : "Which reframe win
 safeText($("voteDescription"), finalRound ? "Vote for the funniest photo-and-caption post. Your vote stays hidden until the jury is done." : "Tap the funniest entry. You can't vote for your own post, and votes stay hidden until everyone has chosen.");
 $("voteRoundPill").textContent = "ROUND " + room.round + " / " + (room.maxRounds || TOTAL_ROUNDS);
 const ownVote = (room.votes || {})[uid];
+const phaseOpen = canPlayerAct(room, "voting");
 const signature = JSON.stringify([room.twists || {}, room.answers || {}, ownVote || null]);
 if (signature !== lastVoteSignature) {
 lastVoteSignature = signature;
@@ -389,7 +560,7 @@ container.replaceChildren();
 if (ownVote) {
 const status = document.createElement("div"); status.className = "status good"; status.textContent = "Vote locked. Waiting for the rest of the jury…"; container.append(status);
 } else {
-Object.keys(room.twists || {}).filter((authorId) => authorId !== uid).sort().forEach((authorId) => container.append(makeVoteCard(authorId, room)));
+Object.keys(room.twists || {}).filter((authorId) => authorId !== uid && !(room.twists[authorId] && room.twists[authorId].skipped)).sort().forEach((authorId) => { const card = makeVoteCard(authorId, room); card.disabled = !phaseOpen; container.append(card); });
 if (container.childElementCount === 0) {
 const status = document.createElement("div"); status.className = "status"; status.textContent = "Waiting for more entries…"; container.append(status);
 }
@@ -404,7 +575,7 @@ const voteMap = room.votes || {};
 const assignments = room.assignments || {};
 const answers = room.answers || {};
 const twists = room.twists || {};
-Object.keys(twists).sort((a,b) => {
+Object.keys(twists).filter(id => !(twists[id] && twists[id].skipped)).sort((a,b) => {
 const va = Object.values(voteMap).filter(v => v === a).length;
 const vb = Object.values(voteMap).filter(v => v === b).length;
 return vb - va;
@@ -445,15 +616,25 @@ $("playAgainNote").textContent = room.hostId === uid ? "A rematch resets everyon
 function renderRoom() {
 const room = currentRoom;
 if (!room) return;
+if (!room.players || !room.players[uid]) {
+returnToLobby();
+say("You are no longer in this room.");
+return;
+}
+if (room.players[uid].removed === true && room.phase !== "lobby") {
+returnToLobby();
+say("You were removed from this match. You can rejoin the room for a later match.");
+return;
+}
 $("endRoom").classList.toggle("hidden", room.hostId !== uid);
-setConnection("online", "Live");
+$("leaveRoom").classList.toggle("hidden", room.hostId === uid);
 $("roomCodeDisplay").textContent = currentCode || "-----";
 const phase = room.phase || "lobby";
 if (phase !== lastPhase) {
 lastPhase = phase;
 if (phase === "lobby") showScreen("room");
 else showScreen(phase);
-if (phase === "answering") { $("answerInput").value = ""; }
+if (phase === "answering") $("answerInput").value = "";
 if (phase === "rewriting") { $("rewriteInput").value = ""; lastVoteSignature = ""; }
 if (phase === "voting") lastVoteSignature = "";
 }
@@ -464,54 +645,124 @@ if (phase === "rewriting") renderRewriting(room);
 if (phase === "voting") renderVoting(room);
 if (phase === "results") renderResults(room);
 if (phase === "finished") renderFinished(room);
-maybeAdvance();
+updatePhaseRuntime();
+if (room.hostId === uid) {
+void resumeHostAfterReconnect();
+void maybeAdvance();
+}
+}
+async function resumeHostAfterReconnect() {
+if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy || phaseMutationBusy) return;
+const host = currentRoom.players && currentRoom.players[uid];
+if (!host || host.online !== true || typeof host.disconnectedAt !== "number" || !Number.isFinite(host.disconnectedAt)) return;
+phaseMutationBusy = true;
+try {
+await runTransaction(currentRoomRef, room => {
+if (!room || room.hostId !== uid) return;
+const currentHost = room.players && room.players[uid];
+if (!currentHost || currentHost.online !== true || typeof currentHost.disconnectedAt !== "number") return;
+const elapsed = Math.max(0, serverNow() - currentHost.disconnectedAt);
+if (typeof room.phaseDeadline === "number" && isTimedPhase(room.phase)) room.phaseDeadline += elapsed;
+room.players[uid].disconnectedAt = null;
+room.players[uid].lastResumedAt = serverNow();
+return room;
+}, { applyLocally: false });
+} catch (error) { console.warn("Could not resume host timer", error); }
+finally { phaseMutationBusy = false; }
 }
 async function maybeAdvance() {
-if (!currentRoomRef || !uid || !currentRoom || busy) return;
+if (!currentRoomRef || !uid || !currentRoom || busy || phaseMutationBusy) return;
 const current = currentRoom;
-if (current.hostId !== uid) return;
-const participants = participantIds(current);
-if (!participants.length) return;
-let shouldTry = false;
-if (current.phase === "answering") shouldTry = participants.every(id => answerSubmitted(current, id));
-if (current.phase === "rewriting") shouldTry = participants.every(id => current.twists && current.twists[id] && current.twists[id].text);
-if (current.phase === "voting") shouldTry = participants.every(id => current.votes && current.votes[id]);
-if (!shouldTry) return;
+if (current.hostId !== uid || hostIsPaused(current)) return;
+if (isTimedPhase(current.phase) && typeof current.phaseDeadline !== "number") {
+phaseMutationBusy = true;
 try {
-await runTransaction(currentRoomRef, (room) => {
-if (!room || !Array.isArray(room.participants)) return;
-const ids = room.participants;
+await runTransaction(currentRoomRef, room => {
+if (!room || room.hostId !== uid || !isTimedPhase(room.phase) || typeof room.phaseDeadline === "number") return;
+beginTimedPhase(room, room.phase);
+return room;
+}, { applyLocally: false });
+} catch (error) { console.warn("Could not initialise phase timer", error); }
+finally { phaseMutationBusy = false; }
+return;
+}
+if (isTimedPhase(current.phase) && typeof current.phaseDeadline === "number" && serverNow() >= current.phaseDeadline) return;
+phaseMutationBusy = true;
+try {
+const active = activeParticipantIds(current);
+const removedNeedsResolve = participantIds(current).some(id => {
+const player = current.players && current.players[id];
+return player && player.removed === true && !phaseActionComplete(current, current.phase, id);
+});
+if (removedNeedsResolve) {
+await runTransaction(currentRoomRef, room => {
+if (!room || room.hostId !== uid || hostIsPaused(room) || !isTimedPhase(room.phase)) return;
+let changed = false;
+participantIds(room).forEach(id => {
+if (room.players && room.players[id] && room.players[id].removed === true) {
+changed = resolveMissingActionInRoom(room, id, room.phase) || changed;
+}
+});
+return changed ? room : undefined;
+}, { applyLocally: false });
+return;
+}
+if (!active.length) return;
+let shouldTry = false;
+if (current.phase === "answering") shouldTry = active.every(id => answerSubmitted(current, id));
+if (current.phase === "rewriting") shouldTry = active.every(id => current.twists && current.twists[id] && current.twists[id].text);
+if (current.phase === "voting") shouldTry = active.every(id => current.votes && current.votes[id]);
+if (!shouldTry) return;
+await runTransaction(currentRoomRef, room => {
+if (!room || room.hostId !== uid || hostIsPaused(room) || !Array.isArray(room.participants)) return;
+if (isTimedPhase(room.phase) && typeof room.phaseDeadline === "number" && serverNow() >= room.phaseDeadline) return;
+const ids = activeParticipantIds(room);
+if (!ids.length) return;
 if (room.phase === "answering" && ids.every(id => answerSubmitted(room, id))) {
+const all = participantIds(room);
 const assignments = {};
-ids.forEach((id, i) => { assignments[id] = ids[(i + 1) % ids.length]; });
-room.phase = "rewriting";
+all.forEach((id, i) => { assignments[id] = all[(i + 1) % all.length]; });
 room.assignments = assignments;
 room.twists = {};
 room.votes = {};
+beginTimedPhase(room, "rewriting");
 return room;
 }
 if (room.phase === "rewriting" && ids.every(id => room.twists && room.twists[id] && room.twists[id].text)) {
-room.phase = "voting";
 room.votes = {};
+beginTimedPhase(room, "voting");
 return room;
 }
 if (room.phase === "voting" && ids.every(id => room.votes && room.votes[id])) {
 const tally = {};
-ids.forEach(id => { tally[id] = 0; });
-Object.values(room.votes).forEach(target => { if (Object.prototype.hasOwnProperty.call(tally, target)) tally[target] += 1; });
-if (!room.scores) room.scores = {};
-Object.keys(tally).forEach(id => {
-room.scores[id] = (room.scores[id] || 0) + tally[id] * 100;
-});
-room.phase = "results";
+Object.keys(room.twists || {}).forEach(id => { if (!(room.twists[id] && room.twists[id].skipped)) tally[id] = 0; });
+Object.values(room.votes || {}).forEach(target => { if (Object.prototype.hasOwnProperty.call(tally, target)) tally[target] += 1; });
+room.scores = room.scores || {};
+Object.keys(tally).forEach(id => { room.scores[id] = (room.scores[id] || 0) + tally[id] * 100; });
 room.voteTally = tally;
+beginTimedPhase(room, "results");
 return room;
 }
 return;
 }, { applyLocally: false });
 } catch (error) {
 console.warn("Could not advance game phase", error);
+} finally {
+phaseMutationBusy = false;
 }
+}
+async function resolveRemovedActions() {
+if (!currentRoomRef || !currentRoom || !uid || currentRoom.hostId !== uid || hostIsPaused(currentRoom) || !isTimedPhase(currentRoom.phase)) return;
+const needsResolve = participantIds(currentRoom).some(id => currentRoom.players && currentRoom.players[id] && currentRoom.players[id].removed === true && !phaseActionComplete(currentRoom, currentRoom.phase, id));
+if (!needsResolve) return;
+await runTransaction(currentRoomRef, room => {
+if (!room || room.hostId !== uid || hostIsPaused(room) || !isTimedPhase(room.phase)) return;
+let changed = false;
+participantIds(room).forEach(id => {
+if (room.players && room.players[id] && room.players[id].removed === true) changed = resolveMissingActionInRoom(room, id, room.phase) || changed;
+});
+return changed ? room : undefined;
+}, { applyLocally: false });
 }
 function attachRoom(code) {
 if (roomListener) roomListener();
@@ -519,21 +770,40 @@ currentCode = code;
 currentRoomRef = ref(db, "rooms/" + code);
 localStorage.setItem("is_room_code", code);
 $("roomCodeDisplay").textContent = code;
-roomListener = onValue(currentRoomRef, (snapshot) => {
+roomListener = onValue(currentRoomRef, snapshot => {
 if (!snapshot.exists()) {
 returnToLobby();
 say("The room has ended. You're back at home.");
 return;
 }
 currentRoom = snapshot.val();
+if (currentRoom.players && currentRoom.players[uid] && currentRoom.players[uid].removed === true && currentRoom.phase !== "lobby") {
+returnToLobby();
+say("You were removed from this match. You can rejoin for a later match.");
+return;
+}
 renderRoom();
-}, (error) => {
+void resolveRemovedActions().then(() => maybeAdvance()).catch(error => console.warn("Could not resolve departed player action", error));
+}, error => {
 setConnection("offline", "Access denied");
 say("Database access denied. Check the Firebase setup steps in the project README.");
 console.error(error);
 });
 setConnection("online", "Live");
-onDisconnect(ref(db, "rooms/" + code + "/players/" + uid + "/online")).set(false).catch(() => {});
+void syncPresence();
+}
+async function syncPresence() {
+if (!firebaseConnected || !uid || !currentCode) return;
+const code = currentCode;
+const playerRef = ref(db, "rooms/" + code + "/players/" + uid);
+try {
+await onDisconnect(playerRef).update({ online: false, disconnectedAt: ServerValue.TIMESTAMP });
+await update(playerRef, { online: true });
+if (currentCode !== code) return;
+if (currentRoom && currentRoom.hostId === uid) await resumeHostAfterReconnect();
+} catch (error) {
+console.warn("Could not refresh player presence", error);
+}
 }
 async function createRoom(name) {
 let code = null;
@@ -543,11 +813,11 @@ const candidateRef = ref(db, "rooms/" + candidate);
 const result = await runTransaction(candidateRef, (room) => {
 if (room) return;
 const players = {};
-players[uid] = { name, joinedAt: Date.now(), online: true };
+players[uid] = { name, joinedAt: serverNow(), online: true, removed: false, disconnectedAt: null };
 return {
 hostId: uid, phase: "lobby", round: 1, maxRounds: TOTAL_ROUNDS,
-createdAt: Date.now(), players, scores: { [uid]: 0 }, participants: null,
-prompt: null, answers: {}, assignments: {}, twists: {}, votes: {}
+createdAt: serverNow(), updatedAt: serverNow(), players, scores: { [uid]: 0 }, participants: null,
+prompt: null, answers: {}, assignments: {}, twists: {}, votes: {}, phaseStartedAt: null, phaseDeadline: null, phaseDurationMs: null
 };
 }, { applyLocally: false });
 if (result.committed) { code = candidate; break; }
@@ -566,13 +836,17 @@ const existingSnapshot = await get(playerRef);
 if (phase !== "lobby" && !existingSnapshot.exists()) {
 throw new Error("This game has already started. Ask the host for a new room.");
 }
+if (phase !== "lobby" && existingSnapshot.val() && existingSnapshot.val().removed === true) {
+throw new Error("You were removed from this match. Rejoin after the host returns the room to the lobby.");
+}
 const playersSnapshot = await get(ref(db, "rooms/" + code + "/players"));
 const players = playersSnapshot.val() || {};
-if (!existingSnapshot.exists() && Object.keys(players).length >= MAX_PLAYERS) {
+const activeCount = Object.values(players).filter(player => player && player.removed !== true).length;
+if (!existingSnapshot.exists() && activeCount >= MAX_PLAYERS) {
 throw new Error("This room is full. Ask the host to start another room.");
 }
-const old = existingSnapshot.val() || { joinedAt: Date.now() };
-await set(playerRef, { ...old, name, online: true, joinedAt: old.joinedAt || Date.now() });
+const old = existingSnapshot.val() || { joinedAt: serverNow() };
+await set(playerRef, { ...old, name, online: true, removed: false, joinedAt: old.joinedAt || serverNow() });
 localStorage.setItem("is_player_name", name);
 attachRoom(code);
 return code;
@@ -600,23 +874,22 @@ $("enterRoom").textContent = "Create a room ↗";
 }
 }
 async function startGame() {
-if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
-const ids = Object.keys(currentRoom.players || {});
-if (ids.length < 3) { say("Invite at least 3 players to start."); return; }
+if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy || hostIsPaused(currentRoom)) return;
+const eligible = Object.keys(currentRoom.players || {}).filter(id => currentRoom.players[id].online !== false && currentRoom.players[id].removed !== true);
+if (eligible.length < 3) { say("Invite at least 3 active, online players to start."); return; }
 busy = true;
 $("startGame").disabled = true;
 const themeSequence = [...shuffled(THEMES.filter(theme => theme.id !== "photo-sharing").map(theme => theme.id)).slice(0, 3), "photo-sharing"];
 try {
-await runTransaction(currentRoomRef, (room) => {
-if (!room || room.phase !== "lobby" || room.hostId !== uid || Object.keys(room.players || {}).length < 3) return;
-room.phase = "answering";
-room.round = 1;
-room.maxRounds = TOTAL_ROUNDS;
-room.participants = Object.keys(room.players);
+const result = await runTransaction(currentRoomRef, room => {
+if (!room || room.phase !== "lobby" || room.hostId !== uid || hostIsPaused(room)) return;
+const ids = Object.keys(room.players || {}).filter(id => room.players[id].online !== false && room.players[id].removed !== true);
+if (ids.length < 3) return;
+room.participants = ids;
 room.themeSequence = themeSequence;
 room.themeId = themeSequence[0];
-room.scores = {};
-Object.keys(room.players).forEach(id => { room.scores[id] = 0; });
+room.maxRounds = TOTAL_ROUNDS;
+room.round = 1;
 room.prompt = THEME_BY_ID[room.themeId].role;
 room.photoOptions = {};
 room.answers = {};
@@ -624,93 +897,188 @@ room.assignments = {};
 room.twists = {};
 room.votes = {};
 room.voteTally = {};
-room.scores = {};
-Object.keys(room.players).forEach(id => { room.scores[id] = 0; });
+room.scores = room.scores || {};
+Object.keys(room.players || {}).forEach(id => { if (room.scores[id] == null) room.scores[id] = 0; });
+beginTimedPhase(room, "answering");
+room.updatedAt = serverNow();
 return room;
 }, { applyLocally: false });
-} catch (error) { say("Couldn't start. Check the database connection."); }
-finally { busy = false; }
+if (!result.committed) say("The room changed before the game could start. Check that at least 3 players are online.");
+} catch (error) { console.error(error); say("Couldn't start. Check the database connection and rules."); }
+finally { busy = false; if (currentRoom) renderRoom(); }
 }
 async function submitPhotoChoice(photoId) {
 const choices = currentRoom && currentRoom.photoOptions && currentRoom.photoOptions[uid] || [];
-if (busy || !currentRoomRef || !currentRoom || currentRoom.themeId !== "photo-sharing" || answerSubmitted(currentRoom, uid) || !choices.includes(photoId)) return;
+if (busy || !currentRoomRef || !currentRoom || !canPlayerAct(currentRoom, "answering") ||
+currentRoom.themeId !== "photo-sharing" || answerSubmitted(currentRoom, uid) || !choices.includes(photoId)) {
+if (currentRoom && !canPlayerAct(currentRoom, "answering")) say("This phase is paused or its timer has expired. Ask the host to extend it.");
+return;
+}
 busy = true;
 try {
-await set(ref(db, "rooms/" + currentCode + "/answers/" + uid), { photoId, createdAt: Date.now() });
+await set(ref(db, "rooms/" + currentCode + "/answers/" + uid), { photoId, createdAt: serverNow() });
 say("Photo picked. Let the caption chaos begin.");
-} catch (error) { say("Couldn't save that photo. Check your connection."); }
+} catch (error) { say("Couldn't save that photo. Check your connection or the Firebase rules."); }
 finally { busy = false; if (currentRoom) renderRoom(); }
 }
 async function submitAnswer() {
 const text = $("answerInput").value.trim();
-if (!text || text.length > 240 || busy || !currentRoomRef) return;
+if (!text || text.length > 240 || busy || !currentRoomRef || !canPlayerAct(currentRoom, "answering") ||
+currentRoom.themeId === "photo-sharing" || answerSubmitted(currentRoom, uid)) {
+if (currentRoom && !canPlayerAct(currentRoom, "answering")) say("This phase is paused or its timer has expired. Ask the host to extend it.");
+return;
+}
 busy = true; $("submitAnswer").disabled = true;
 try {
-await set(ref(db, "rooms/" + currentCode + "/answers/" + uid), { text, createdAt: Date.now() });
+await set(ref(db, "rooms/" + currentCode + "/answers/" + uid), { text, createdAt: serverNow() });
 $("answerInput").value = "";
 say("Answer locked.");
-} catch (error) { say("Couldn't submit. Check your connection."); }
+} catch (error) { say("Couldn't submit. Check your connection or the Firebase rules."); }
 finally { busy = false; if (currentRoom) renderRoom(); }
 }
 async function submitRewrite() {
 const text = $("rewriteInput").value.trim();
-if (!text || text.length > 240 || busy || !currentRoomRef) return;
+if (!text || text.length > 240 || busy || !currentRoomRef || !canPlayerAct(currentRoom, "rewriting") ||
+(currentRoom.twists && currentRoom.twists[uid])) {
+if (currentRoom && !canPlayerAct(currentRoom, "rewriting")) say("This phase is paused or its timer has expired. Ask the host to extend it.");
+return;
+}
 busy = true; $("submitRewrite").disabled = true;
 try {
-await set(ref(db, "rooms/" + currentCode + "/twists/" + uid), { text, createdAt: Date.now() });
+await set(ref(db, "rooms/" + currentCode + "/twists/" + uid), { text, createdAt: serverNow() });
 $("rewriteInput").value = "";
 say("Context published.");
-} catch (error) { say("Couldn't publish. Check your connection."); }
+} catch (error) { say("Couldn't publish. Check your connection or the Firebase rules."); }
 finally { busy = false; if (currentRoom) renderRoom(); }
 }
 async function castVote(authorId) {
-if (!currentRoomRef || busy || !currentRoom || authorId === uid || (currentRoom.votes && currentRoom.votes[uid])) return;
+if (!currentRoomRef || busy || !currentRoom || !canPlayerAct(currentRoom, "voting") ||
+authorId === uid || (currentRoom.votes && currentRoom.votes[uid]) ||
+!currentRoom.twists || !currentRoom.twists[authorId] || currentRoom.twists[authorId].skipped) {
+if (currentRoom && !canPlayerAct(currentRoom, "voting")) say("Voting is paused or time has expired. Ask the host to extend it.");
+return;
+}
 busy = true;
 try {
 await set(ref(db, "rooms/" + currentCode + "/votes/" + uid), authorId);
 say("Vote locked.");
-} catch (error) { say("Couldn't vote. Check your connection."); }
+} catch (error) { say("Couldn't vote. Check your connection or the Firebase rules."); }
 finally { busy = false; if (currentRoom) renderRoom(); }
 }
+async function waitMoreTime() {
+if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy || hostIsPaused(currentRoom) || !isTimedPhase(currentRoom.phase)) return;
+phaseMutationBusy = true;
+try {
+const result = await runTransaction(currentRoomRef, room => {
+if (!room || room.hostId !== uid || hostIsPaused(room) || !isTimedPhase(room.phase)) return;
+const base = typeof room.phaseDeadline === "number" ? Math.max(room.phaseDeadline, serverNow()) : serverNow();
+room.phaseDeadline = base + TIMEOUT_EXTENSION;
+room.phaseStartedAt = typeof room.phaseStartedAt === "number" ? room.phaseStartedAt : serverNow();
+room.phaseDurationMs = Math.max(0, room.phaseDeadline - room.phaseStartedAt);
+room.updatedAt = serverNow();
+return room;
+}, { applyLocally: false });
+if (result.committed) say("Added 60 seconds. Completed actions remain locked.");
+} catch (error) { say("Couldn't extend the timer."); }
+finally { phaseMutationBusy = false; if (currentRoom) { updatePhaseRuntime(); void maybeAdvance(); } }
+}
+async function handleTimeoutAction(playerId, action) {
+if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy || phaseMutationBusy || hostIsPaused(currentRoom)) return;
+const phase = currentRoom.phase;
+if (!isTimedPhase(phase) || typeof currentRoom.phaseDeadline !== "number" || serverNow() < currentRoom.phaseDeadline ||
+!missingActions(currentRoom).includes(playerId)) return;
+phaseMutationBusy = true;
+try {
+const result = await runTransaction(currentRoomRef, room => {
+if (!room || room.hostId !== uid || hostIsPaused(room) || room.phase !== phase ||
+typeof room.phaseDeadline !== "number" || serverNow() < room.phaseDeadline ||
+!missingActions(room).includes(playerId)) return;
+if (action === "remove") {
+room.players = room.players || {};
+room.players[playerId] = { ...(room.players[playerId] || {}), removed: true, online: false, removedAt: serverNow() };
+}
+resolveMissingActionInRoom(room, playerId, phase);
+room.updatedAt = serverNow();
+return room;
+}, { applyLocally: false });
+if (result.committed) say(action === "remove" ? "Player removed from this match. Their current-round records are preserved." : "Missing action skipped. No points are awarded for a skipped vote or entry.");
+} catch (error) { console.error(error); say("Couldn't apply that timeout action. Check the Firebase rules."); }
+finally { phaseMutationBusy = false; if (currentRoom) { renderRoom(); void maybeAdvance(); } }
+}
+async function leaveRoom() {
+if (!currentCode || !currentRoomRef || !currentRoom || !uid || currentRoom.hostId === uid || busy) return;
+if (!confirm("Leave this room? During a match, your unfinished actions will be resolved as skipped.")) return;
+busy = true;
+const code = currentCode;
+try {
+const playerRef = ref(db, "rooms/" + code + "/players/" + uid);
+if (currentRoom.phase === "lobby") {
+await onDisconnect(playerRef).cancel().catch(() => {});
+await set(playerRef, null);
+} else {
+await update(playerRef, { removed: true, online: false, departedAt: serverNow() });
+await onDisconnect(playerRef).cancel().catch(() => {});
+}
+returnToLobby();
+say("You left the room.");
+} catch (error) {
+console.error(error);
+say("Couldn't leave cleanly. Check your connection.");
+} finally { busy = false; }
+}
 async function nextRound() {
-if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
+if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy || hostIsPaused(currentRoom)) return;
 busy = true; $("nextRound").disabled = true;
 const nextRoundNumber = Number(currentRoom.round || 1) + 1;
-const nextPhotoOptions = nextRoundNumber === 4 ? buildPhotoOptions(participantIds(currentRoom)) : {};
+const nextParticipants = activeParticipantIds(currentRoom);
+const nextPhotoOptions = nextRoundNumber === 4 ? buildPhotoOptions(nextParticipants) : {};
 try {
-await runTransaction(currentRoomRef, (room) => {
-if (!room || room.phase !== "results" || room.hostId !== uid) return;
+const result = await runTransaction(currentRoomRef, room => {
+if (!room || room.phase !== "results" || room.hostId !== uid || hostIsPaused(room)) return;
 if (Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS)) {
-room.phase = "finished";
+beginTimedPhase(room, "finished");
 return room;
 }
-room.round = nextRoundNumber;
+const ids = activeParticipantIds(room);
+if (ids.length < 3) {
+beginTimedPhase(room, "finished");
+room.finishReason = "fewer-than-three-active-players";
+return room;
+}
+room.round = Number(room.round || 1) + 1;
+room.participants = ids;
 room.themeId = (room.themeSequence || [])[room.round - 1] || "photo-sharing";
 room.prompt = THEME_BY_ID[room.themeId].role;
-room.photoOptions = nextPhotoOptions;
-room.phase = "answering";
+room.photoOptions = room.round === 4 ? nextPhotoOptions : {};
 room.answers = {};
 room.assignments = {};
 room.twists = {};
 room.votes = {};
 room.voteTally = {};
+beginTimedPhase(room, "answering");
+room.updatedAt = serverNow();
 return room;
 }, { applyLocally: false });
+if (!result.committed) say("The next round couldn't start. Check the room status.");
 } catch (error) { say("Couldn't start the next round."); }
 finally { busy = false; if (currentRoom) renderRoom(); }
 }
 async function playAgain() {
-if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
+if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy || hostIsPaused(currentRoom)) return;
 busy = true; $("playAgain").disabled = true;
 try {
-await runTransaction(currentRoomRef, (room) => {
-if (!room || room.phase !== "finished" || room.hostId !== uid) return;
+const result = await runTransaction(currentRoomRef, room => {
+if (!room || room.phase !== "finished" || room.hostId !== uid || hostIsPaused(room)) return;
 room.phase = "lobby"; room.round = 1; room.prompt = null; room.participants = null;
 room.answers = {}; room.assignments = {}; room.twists = {}; room.votes = {}; room.voteTally = {};
+room.photoOptions = {}; room.themeSequence = []; room.finishReason = null;
+room.phaseStartedAt = null; room.phaseDeadline = null; room.phaseDurationMs = null;
 room.scores = {};
 Object.keys(room.players || {}).forEach(id => { room.scores[id] = 0; });
+room.updatedAt = serverNow();
 return room;
 }, { applyLocally: false });
+if (!result.committed) say("The room could not be reset.");
 } catch (error) { say("Couldn't reset the room."); }
 finally { busy = false; $("playAgain").disabled = false; }
 }
@@ -720,19 +1088,25 @@ try { await navigator.clipboard.writeText(currentCode); say("Room code copied.")
 catch (_) { window.prompt("Copy this room code for your friends:", currentCode); }
 }
 function returnToLobby() {
+const oldCode = currentCode;
 if (roomListener) { roomListener(); roomListener = null; }
+if (oldCode && uid) onDisconnect(ref(db, "rooms/" + oldCode + "/players/" + uid)).cancel().catch(() => {});
 currentCode = null; currentRoomRef = null; currentRoom = null; lastPhase = ""; lastVoteSignature = "";
 localStorage.removeItem("is_room_code");
 $("endRoom").classList.add("hidden");
+$("leaveRoom").classList.add("hidden");
+hide("phaseRuntime"); hide("hostTimeoutPanel");
 showScreen("lobby"); setConnection("online", "Connected");
 }
 async function endRoom() {
 if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy) return;
 if (!confirm("End this room for everyone and return to the home page? Your friends will be sent home too.")) return;
 const roomRefToEnd = currentRoomRef;
+const code = currentCode;
 busy = true;
 $("endRoom").disabled = true;
 try {
+await onDisconnect(ref(db, "rooms/" + code + "/players/" + uid)).cancel().catch(() => {});
 await set(roomRefToEnd, null);
 returnToLobby();
 say("Room ended. Everyone has been sent home.");
@@ -755,6 +1129,8 @@ currentRoom = null;
 lastPhase = "";
 lastVoteSignature = "";
 localStorage.removeItem("is_room_code");
+$("leaveRoom").classList.add("hidden");
+hide("phaseRuntime"); hide("hostTimeoutPanel");
 showScreen("lobby");
 setConnection("online", "Connected");
 }
@@ -770,6 +1146,8 @@ $("nextRound").addEventListener("click", nextRound);
 $("playAgain").addEventListener("click", playAgain);
 $("copyRoomCode").addEventListener("click", copyCode);
 $("endRoom").addEventListener("click", endRoom);
+$("leaveRoom").addEventListener("click", leaveRoom);
+$("waitMore").addEventListener("click", waitMoreTime);
 
 onAuthStateChanged(auth, async (user) => {
 if (user) {
@@ -780,6 +1158,13 @@ await tryResume();
 setConnection("", "Signing in");
 }
 });
+onValue(ref(db, ".info/serverTimeOffset"), snapshot => { serverTimeOffset = Number(snapshot.val() || 0); updatePhaseRuntime(); });
+onValue(ref(db, ".info/connected"), snapshot => {
+firebaseConnected = snapshot.val() === true;
+if (firebaseConnected) void syncPresence();
+else if (currentRoom) updatePhaseRuntime();
+});
+setInterval(updatePhaseRuntime, 1000);
 signInAnonymously(auth).catch((error) => {
 console.error("Anonymous sign-in failed", error);
 setConnection("offline", "Setup needed");
