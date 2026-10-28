@@ -348,11 +348,79 @@ return false;
 function updatePhaseRuntime() {
 const room = currentRoom;
 const box = $("phaseRuntime");
-if (!box) return;
-if (!room || !isTimedPhase(room.phase)) {
-hide("phaseRuntime");
+if (!box || !room) {
+hide("phaseRuntime"); hide("hostTimeoutPanel");
+return;
+}
+const paused = hostIsPaused(room);
+const host = room.players && room.players[room.hostId];
+if (!isTimedPhase(room.phase) && !paused) {
+hide("phaseRuntime"); hide("hostTimeoutPanel");
+return;
+}
+show("phaseRuntime");
+safeText($("phaseRuntimeKicker"), "ROUND " + (room.round || 1) + " · " + phaseLabel(room.phase).toUpperCase());
+safeText($("phaseRuntimeTitle"), paused ? "Game paused" : (phaseLabel(room.phase) + " phase"));
+if (paused) {
+$("phaseClock").textContent = "PAUSED";
+safeText($("phaseRuntimeMessage"), host && host.online === false
+? "Game paused because the original host disconnected. All game actions are paused until that host returns."
+: "The original host has reconnected. Restoring the shared timer and state before play resumes…");
 hide("hostTimeoutPanel");
 return;
+}
+let deadline = typeof room.phaseDeadline === "number" ? room.phaseDeadline : serverNow();
+const remaining = deadline - serverNow();
+$("phaseClock").textContent = formatRemaining(remaining);
+if (!room.phaseDeadline) {
+safeText($("phaseRuntimeMessage"), "The host is setting up this phase timer…");
+hide("hostTimeoutPanel");
+return;
+}
+if (remaining > 0) {
+safeText($("phaseRuntimeMessage"), "Everyone has the same deadline. Take your time; the host can extend it if needed.");
+hide("hostTimeoutPanel");
+return;
+}
+const missing = missingActions(room);
+if (!missing.length) {
+safeText($("phaseRuntimeMessage"), "Time is up, but all required actions are in. The game is advancing…");
+hide("hostTimeoutPanel");
+return;
+}
+safeText($("phaseRuntimeMessage"), "Time expired. Waiting for the host to decide how to handle " + missing.length + " missing action(s).");
+if (room.hostId === uid) {
+show("hostTimeoutPanel");
+const list = $("timeoutMissing");
+list.replaceChildren();
+missing.forEach(id => {
+const row = document.createElement("div");
+row.className = "status";
+row.style.display = "flex";
+row.style.alignItems = "center";
+row.style.justifyContent = "space-between";
+row.style.gap = "10px";
+row.style.flexWrap = "wrap";
+const person = document.createElement("span");
+person.textContent = playerNameFor(room, id) + " — no " + phaseLabel(room.phase).toLowerCase() + " yet";
+const actions = document.createElement("span");
+actions.style.display = "flex"; actions.style.gap = "6px"; actions.style.flexWrap = "wrap";
+const skip = document.createElement("button");
+skip.type = "button"; skip.className = "btn secondary"; skip.style.width = "auto"; skip.style.minHeight = "36px"; skip.style.padding = "8px 10px";
+skip.textContent = "Skip";
+skip.addEventListener("click", () => handleTimeoutAction(id, "skip"));
+const removePlayer = document.createElement("button");
+removePlayer.type = "button"; removePlayer.className = "btn ghost"; removePlayer.style.width = "auto"; removePlayer.style.minHeight = "36px"; removePlayer.style.padding = "8px 10px"; removePlayer.style.color = "var(--danger)";
+removePlayer.textContent = "Remove";
+removePlayer.addEventListener("click", () => handleTimeoutAction(id, "remove"));
+if (id !== uid) actions.append(removePlayer);
+actions.append(skip);
+row.append(person, actions); list.append(row);
+});
+$("waitMore").disabled = busy || phaseMutationBusy;
+} else {
+hide("hostTimeoutPanel");
+}
 }
 show("phaseRuntime");
 safeText($("phaseRuntimeKicker"), "ROUND " + (room.round || 1) + " · " + phaseLabel(room.phase).toUpperCase());
