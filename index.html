@@ -537,6 +537,7 @@ const answer = targetId && room.answers && room.answers[targetId];
 $("answerToReframe").replaceChildren();
 if (answer && room.themeId === "photo-sharing") appendPhoto($("answerToReframe"), answer.photoId);
 else safeText($("answerToReframe"), answer ? "“" + (answer.text || "") + "”" : "Your post is being assigned…");
+if (answer && answer.skipped) { const note = document.createElement("div"); note.className = "status"; note.textContent = room.themeId === "photo-sharing" ? "Photo auto-selected after a timeout." : "Placeholder answer added after a timeout."; $("answerToReframe").append(note); }
 const submitted = Boolean((room.twists || {})[uid]);
 const phaseOpen = canPlayerAct(room, "rewriting");
 $("rewriteInput").disabled = submitted || busy || !phaseOpen;
@@ -686,7 +687,7 @@ return room;
 finally { phaseMutationBusy = false; }
 return;
 }
-if (isTimedPhase(current.phase) && typeof current.phaseDeadline === "number" && serverNow() >= current.phaseDeadline) return;
+if (isTimedPhase(current.phase) && typeof current.phaseDeadline === "number" && serverNow() >= current.phaseDeadline && missingActions(current).length > 0) return;
 phaseMutationBusy = true;
 try {
 const active = activeParticipantIds(current);
@@ -715,7 +716,7 @@ if (current.phase === "voting") shouldTry = active.every(id => current.votes && 
 if (!shouldTry) return;
 await runTransaction(currentRoomRef, room => {
 if (!room || room.hostId !== uid || hostIsPaused(room) || !Array.isArray(room.participants)) return;
-if (isTimedPhase(room.phase) && typeof room.phaseDeadline === "number" && serverNow() >= room.phaseDeadline) return;
+if (isTimedPhase(room.phase) && typeof room.phaseDeadline === "number" && serverNow() >= room.phaseDeadline && missingActions(room).length > 0) return;
 const ids = activeParticipantIds(room);
 if (!ids.length) return;
 if (room.phase === "answering" && ids.every(id => answerSubmitted(room, id))) {
