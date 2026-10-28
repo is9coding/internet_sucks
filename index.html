@@ -405,12 +405,15 @@ const vb = Object.values(voteMap).filter(v => v === b).length;
 return vb - va;
 }).forEach((authorId) => {
 const wrap = document.createElement("div"); wrap.className = "vote-card"; wrap.style.cursor = "default";
-const title = document.createElement("div"); title.className = "context"; title.textContent = twists[authorId].text;
-const quote = document.createElement("div"); quote.className = "quote"; quote.textContent = "“" + ((answers[assignments[authorId]] && answers[assignments[authorId]].text) || "") + "”";
+const title = document.createElement("div"); title.className = room.themeId === "photo-sharing" ? "photo-caption" : "context"; title.textContent = twists[authorId].text;
+const answer = answers[assignments[authorId]] || {};
+const quote = document.createElement("div"); quote.className = "quote"; quote.textContent = "“" + (answer.text || "") + "”";
 const votes = Object.values(voteMap).filter(v => v === authorId).length;
 const credits = document.createElement("div"); credits.className = "meta"; credits.style.marginTop = "10px";
-credits.textContent = "Reframed by " + playerNameFor(room, authorId) + " · Original answer by " + playerNameFor(room, assignments[authorId]) + " · " + votes + " vote(s)";
-wrap.append(title, quote, credits); reveal.append(wrap);
+credits.textContent = "Caption by " + playerNameFor(room, authorId) + " · Photo picked by " + playerNameFor(room, assignments[authorId]) + " · " + votes + " vote(s)";
+if (room.themeId === "photo-sharing") { appendPhoto(wrap, answer.photoId); wrap.append(title, credits); }
+else { credits.textContent = "Reframed by " + playerNameFor(room, authorId) + " · Original answer by " + playerNameFor(room, assignments[authorId]) + " · " + votes + " vote(s)"; wrap.append(title, quote, credits); }
+reveal.append(wrap);
 });
 const players = room.players || {};
 const scores = room.scores || {};
@@ -621,6 +624,16 @@ return room;
 }, { applyLocally: false });
 } catch (error) { say("Couldn't start. Check the database connection."); }
 finally { busy = false; }
+}
+async function submitPhotoChoice(photoId) {
+const choices = currentRoom && currentRoom.photoOptions && currentRoom.photoOptions[uid] || [];
+if (busy || !currentRoomRef || !currentRoom || currentRoom.themeId !== "photo-sharing" || answerSubmitted(currentRoom, uid) || !choices.includes(photoId)) return;
+busy = true;
+try {
+await set(ref(db, "rooms/" + currentCode + "/answers/" + uid), { photoId, createdAt: Date.now() });
+say("Photo picked. Let the caption chaos begin.");
+} catch (error) { say("Couldn't save that photo. Check your connection."); }
+finally { busy = false; if (currentRoom) renderRoom(); }
 }
 async function submitAnswer() {
 const text = $("answerInput").value.trim();
