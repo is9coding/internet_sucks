@@ -412,7 +412,8 @@ const removePlayer = document.createElement("button");
 removePlayer.type = "button"; removePlayer.className = "btn ghost"; removePlayer.style.width = "auto"; removePlayer.style.minHeight = "36px"; removePlayer.style.padding = "8px 10px"; removePlayer.style.color = "var(--danger)";
 removePlayer.textContent = "Remove";
 removePlayer.addEventListener("click", () => handleTimeoutAction(id, "remove"));
-actions.append(skip, removePlayer);
+if (id !== uid) actions.append(removePlayer);
+actions.append(skip);
 row.append(person, actions); list.append(row);
 });
 $("waitMore").disabled = busy || phaseMutationBusy;
@@ -999,6 +1000,7 @@ if (result.committed) say("Added 60 seconds. Completed actions remain locked.");
 finally { phaseMutationBusy = false; if (currentRoom) { updatePhaseRuntime(); void maybeAdvance(); } }
 }
 async function handleTimeoutAction(playerId, action) {
+if (action === "remove" && playerId === uid) { say("The host cannot remove themselves. Skip their own action or end the room."); return; }
 if (!currentRoomRef || !currentRoom || currentRoom.hostId !== uid || busy || phaseMutationBusy || hostIsPaused(currentRoom)) return;
 const phase = currentRoom.phase;
 if (!isTimedPhase(phase) || typeof currentRoom.phaseDeadline !== "number" || serverNow() < currentRoom.phaseDeadline ||
