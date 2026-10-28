@@ -725,8 +725,16 @@ showScreen("lobby"); setConnection("online", "Connected");
 }
 async function tryResume() {
 $("playerName").value = localStorage.getItem("is_player_name") || "";
-// A fresh page visit always starts at the lobby; never silently rejoin an old room.
+// Always reset client-side room state on a fresh page load.
+// Keep only the player's display name; never auto-attach to a previous room.
+if (roomListener) { roomListener(); roomListener = null; }
+currentCode = null;
+currentRoomRef = null;
+currentRoom = null;
+lastPhase = "";
+lastVoteSignature = "";
 localStorage.removeItem("is_room_code");
+showScreen("lobby");
 setConnection("online", "Connected");
 }
 
