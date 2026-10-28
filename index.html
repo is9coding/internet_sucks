@@ -253,6 +253,19 @@
       "What's a sentence that would ruin a perfectly good birthday party?",
       "What would be the funniest thing to find in a museum gift shop?"
     ];
+    const THEMES = [
+      {id:"video-site",name:"Video Site",role:"Top comment under a video",frame:"What is the title of the video they commented on?"},
+      {id:"social-media",name:"Social Media",role:"A public post",frame:"What hashtag trend did they attach to this post?"},
+      {id:"social-network",name:"Social Network",role:"A link shared with a comment",frame:"What article headline did they share?"},
+      {id:"web-forum",name:"Web Forum",role:"An answer in a Q&A thread",frame:"What question are they replying to?"},
+      {id:"job-network",name:"Job Network",role:"Why they're qualified",frame:"What weird job skill are they endorsing?"},
+      {id:"store",name:"Store",role:"A verified customer review",frame:"What product are they reviewing?"},
+      {id:"crowdfunding",name:"Crowdfunding",role:"A campaign creator's pitch",frame:"What is the title of their campaign?"},
+      {id:"check-in-site",name:"Check-in Site",role:"A local review",frame:"What business or location did they check into?"},
+      {id:"news-site",name:"News Site",role:"A reader comment on an article",frame:"What breaking news headline are they reacting to?"},
+      {id:"photo-sharing",name:"Photo Sharing Site",role:"A photo on their personal feed",frame:"Write the caption they put under this photo."}
+    ];
+    const THEME_BY_ID = Object.fromEntries(THEMES.map(theme => [theme.id, theme]));
     const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const MAX_PLAYERS = 12;
     const TOTAL_ROUNDS = 4;
