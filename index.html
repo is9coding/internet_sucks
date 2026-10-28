@@ -346,17 +346,29 @@
       list.append(li);
     }
     function makeVoteCard(authorId, room) {
-      const assignments = room.assignments || {};
       const answers = room.answers || {};
       const twists = room.twists || {};
-      const assignment = assignments[authorId];
-      const answerText = (answers[assignment] && answers[assignment].text) || "(no answer)";
+      const targetId = (room.assignments || {})[authorId];
+      const answer = answers[targetId] || {};
       const card = document.createElement("button");
-      card.type = "button"; card.className = "vote-card";
-      const hint = document.createElement("div"); hint.className = "hint"; hint.textContent = "THE REFRAME";
-      const ctx = document.createElement("div"); ctx.className = "context"; ctx.textContent = (twists[authorId] && twists[authorId].text) || "";
-      const quote = document.createElement("div"); quote.className = "quote"; quote.textContent = "“" + answerText + "”";
-      card.append(hint, ctx, quote);
+      card.type = "button";
+      card.className = "vote-card";
+      const hint = document.createElement("div");
+      hint.className = "hint";
+      hint.textContent = themeFor(room).name.toUpperCase();
+      const content = document.createElement("div");
+      content.className = room.themeId === "photo-sharing" ? "photo-caption" : "context";
+      content.textContent = (twists[authorId] && twists[authorId].text) || "";
+      if (room.themeId === "photo-sharing") {
+        card.append(hint);
+        appendPhoto(card, answer.photoId);
+        card.append(content);
+      } else {
+        const quote = document.createElement("div");
+        quote.className = "quote";
+        quote.textContent = "“" + (answer.text || "(no answer)") + "”";
+        card.append(hint, content, quote);
+      }
       card.addEventListener("click", () => castVote(authorId));
       return card;
     }
