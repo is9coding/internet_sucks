@@ -360,6 +360,7 @@ const theme = themeFor(room);
 safeText($("rewriteTitle"), theme.frame);
 safeText($("rewriteKicker"), "ROUND " + room.round + " · " + theme.name.toUpperCase());
 safeText($("rewriteLabel"), room.themeId === "photo-sharing" ? "THE POST CAPTION" : "THE INTERNET'S VERSION");
+safeText($("rewriteDescription"), room.themeId === "photo-sharing" ? "Write a caption for this photo. It will appear directly underneath the image." : "You see their post without its original context. Add the framing that makes it funnier.");
 $("rewriteInput").placeholder = theme.placeholder || "Add your context…";
 const targetId = (room.assignments || {})[uid];
 const answer = targetId && room.answers && room.answers[targetId];
@@ -369,7 +370,7 @@ else safeText($("answerToReframe"), answer ? "“" + (answer.text || "") + "”"
 const submitted = Boolean((room.twists || {})[uid]);
 $("rewriteInput").disabled = submitted || busy;
 $("submitRewrite").disabled = submitted || busy || !answer;
-$("submitRewrite").textContent = submitted ? "Post published ✓" : "Publish your slander";
+$("submitRewrite").textContent = submitted ? "Post published ✓" : (room.themeId === "photo-sharing" ? "Publish caption" : "Publish your framing");
 $("rewriteStatus").classList.toggle("hidden", !submitted);
 if (submitted) $("rewriteStatus").textContent = "Posted. The jury is assembling…";
 }
