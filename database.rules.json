@@ -11,7 +11,7 @@
         "players": {
           ".read": "auth != null",
           "$player": {
-            ".write": "auth != null && auth.uid === $player && (root.child('rooms').child($room).child('phase').val() === 'lobby' || (data.exists() && (newData.child('removed').val() === data.child('removed').val() || newData.child('removed').val() === true)))"
+            ".write": "auth != null && auth.uid === $player && (root.child('rooms').child($room).child('phase').val() === 'lobby' || (data.exists() && (newData.child('removed').val() === data.child('removed').val() || newData.child('removed').val() === true || (data.child('removed').val() == null && newData.child('removed').val() === false))))"
           }
         },
         "answers": {
