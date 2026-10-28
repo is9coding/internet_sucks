@@ -144,7 +144,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, get, set, update, onValue, runTransaction, onDisconnect, ServerValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, get, set, update, onValue, runTransaction, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // This is the web app configuration already associated with this project.
 const firebaseConfig = {
@@ -820,7 +820,7 @@ if (!firebaseConnected || !uid || !currentCode) return;
 const code = currentCode;
 const playerRef = ref(db, "rooms/" + code + "/players/" + uid);
 try {
-await onDisconnect(playerRef).update({ online: false, disconnectedAt: ServerValue.TIMESTAMP });
+await onDisconnect(playerRef).update({ online: false, disconnectedAt: serverTimestamp() });
 await update(playerRef, { online: true });
 if (currentCode !== code) return;
 if (currentRoom && currentRoom.hostId === uid) await resumeHostAfterReconnect();
@@ -875,10 +875,14 @@ attachRoom(code);
 return code;
 }
 async function enterRoom() {
-if (busy || !uid) return;
+if (busy) return;
+clearError("lobbyError");
+if (!uid) {
+showError("lobbyError", "Still connecting to Firebase. Check your connection and try again in a moment.");
+return;
+}
 const name = $("playerName").value.trim().replace(/\s+/g, " ");
 const code = $("joinCode").value.trim().toUpperCase();
-clearError("lobbyError");
 if (!name) { showError("lobbyError", "Pick a nickname first."); return; }
 if (name.length > 18) { showError("lobbyError", "Keep your nickname under 18 characters."); return; }
 if (code && !/^[A-Z0-9]{5}$/.test(code)) { showError("lobbyError", "Room codes have 5 letters or numbers."); return; }
@@ -1152,7 +1156,7 @@ if (oldCode && uid && oldRoom && oldRoom.players && oldRoom.players[uid]) {
 const playerRef = ref(db, "rooms/" + oldCode + "/players/" + uid);
 try {
 if (oldRoom.hostId === uid) {
-await update(playerRef, { online: false, disconnectedAt: ServerValue.TIMESTAMP });
+await update(playerRef, { online: false, disconnectedAt: serverTimestamp() });
 } else if (oldRoom.phase === "lobby") {
 await onDisconnect(playerRef).cancel().catch(() => {});
 await set(playerRef, null);
