@@ -448,6 +448,7 @@ content.textContent = (twists[authorId] && twists[authorId].text) || "";
 if (room.themeId === "photo-sharing") {
 card.append(hint);
 appendPhoto(card, answer.photoId);
+if (answer.skipped) { const note = document.createElement("div"); note.className = "meta"; note.textContent = "Photo auto-selected after timeout"; card.append(note); }
 card.append(content);
 } else {
 const quote = document.createElement("div");
@@ -588,15 +589,22 @@ const quote = document.createElement("div"); quote.className = "quote"; quote.te
 const votes = Object.values(voteMap).filter(v => v === authorId).length;
 const credits = document.createElement("div"); credits.className = "meta"; credits.style.marginTop = "10px";
 credits.textContent = "Caption by " + playerNameFor(room, authorId) + " · Photo picked by " + playerNameFor(room, assignments[authorId]) + " · " + votes + " vote(s)";
-if (room.themeId === "photo-sharing") { appendPhoto(wrap, answer.photoId); wrap.append(title, credits); }
-else { credits.textContent = "Reframed by " + playerNameFor(room, authorId) + " · Original answer by " + playerNameFor(room, assignments[authorId]) + " · " + votes + " vote(s)"; wrap.append(title, quote, credits); }
+if (room.themeId === "photo-sharing") {
+appendPhoto(wrap, answer.photoId);
+if (answer.skipped) { const note = document.createElement("div"); note.className = "meta"; note.textContent = "Photo auto-selected after timeout"; wrap.append(note); }
+wrap.append(title, credits);
+} else { credits.textContent = "Reframed by " + playerNameFor(room, authorId) + " · Original answer by " + playerNameFor(room, assignments[authorId]) + " · " + votes + " vote(s)"; wrap.append(title, quote, credits); }
 reveal.append(wrap);
 });
 const players = room.players || {};
 const scores = room.scores || {};
 const ranked = Object.keys(players).sort((a,b) => (scores[b] || 0) - (scores[a] || 0));
 $("scoreList").replaceChildren();
-ranked.forEach((id, i) => addPlayerRow($("scoreList"), players[id].name || "Player", (i === 0 ? "Top of the chaos" : "Total score"), (scores[id] || 0) + " pts", i));
+const topRoundScore = ranked.length ? (scores[ranked[0]] || 0) : null;
+ranked.forEach((id, i) => {
+const isTop = topRoundScore !== null && (scores[id] || 0) === topRoundScore;
+addPlayerRow($("scoreList"), players[id].name || "Player", isTop ? (i === 0 ? "Top of the chaos" : "Tied for top") : "Total score", (scores[id] || 0) + " pts", i);
+});
 $("nextRound").textContent = Number(room.round) >= Number(room.maxRounds || TOTAL_ROUNDS) ? "Reveal final standings ↗" : "Next round ↗";
 $("nextRound").disabled = room.hostId !== uid || busy;
 $("nextRound").classList.toggle("hidden", room.hostId !== uid);
@@ -606,10 +614,17 @@ const players = room.players || {};
 const scores = room.scores || {};
 const ranked = Object.keys(players).sort((a,b) => (scores[b] || 0) - (scores[a] || 0));
 $("finalScoreList").replaceChildren();
-ranked.forEach((id, i) => addPlayerRow($("finalScoreList"), players[id].name || "Player", i === 0 ? "👑 chaos champion" : "Final score", (scores[id] || 0) + " pts", i));
+const topScore = ranked.length ? (scores[ranked[0]] || 0) : null;
+const winners = ranked.filter(id => (scores[id] || 0) === topScore);
+ranked.forEach((id, i) => {
+const isWinner = topScore !== null && (scores[id] || 0) === topScore;
+addPlayerRow($("finalScoreList"), players[id].name || "Player", isWinner ? (winners.length > 1 ? "🤝 tied champion" : "👑 chaos champion") : "Final score", (scores[id] || 0) + " pts", i);
+});
 $("winnerPanel").replaceChildren();
 const title = document.createElement("h2");
-title.textContent = ranked.length ? "👑 " + playerNameFor(room, ranked[0]) + " wins." : "Nobody wins. Very on brand.";
+title.textContent = winners.length > 1
+? "🤝 It's a tie: " + winners.map(id => playerNameFor(room, id)).join(", ") + "."
+: (ranked.length ? "👑 " + playerNameFor(room, ranked[0]) + " wins." : "Nobody wins. Very on brand.");
 $("winnerPanel").append(title);
 $("playAgain").classList.toggle("hidden", room.hostId !== uid);
 $("playAgainNote").textContent = room.hostId === uid ? "A rematch resets everyone's score." : "Only the host can start a rematch.";
